@@ -1,0 +1,2436 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Medrese Ders Takip ve Analiz Sistemi</title>
+    <meta name="theme-color" content="#fdfbf7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Medrese Takip">
+    
+    <!-- Özel Rahle / Medrese Simge (PWA & Masaüstü İkonu) -->
+    <link id="app-favicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='24' fill='%23fdfbf7' stroke='%231e293b' stroke-width='6'/%3E%3Cpath d='M25 85 L95 45 M95 85 L25 45 M20 45 Q60 60 100 45 L100 32 Q60 47 20 32 Z' fill='%23fef08a' stroke='%231e293b' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='60' cy='22' r='6' fill='%231e293b'/%3E%3C/svg%3E">
+    <link id="app-apple-icon" rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='24' fill='%23fdfbf7' stroke='%231e293b' stroke-width='6'/%3E%3Cpath d='M25 85 L95 45 M95 85 L25 45 M20 45 Q60 60 100 45 L100 32 Q60 47 20 32 Z' fill='%23fef08a' stroke='%231e293b' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='60' cy='22' r='6' fill='%231e293b'/%3E%3C/svg%3E">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- El Yazısı ve Eskiz Fontu -->
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Amiri:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --paper-bg: #fdfbf7;
+            --ink-color: #1e293b;
+            --sketch-yellow: #fef08a;
+            --sketch-green: #bbf7d0;
+            --sketch-blue: #bae6fd;
+            --sketch-red: #fecaca;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Patrick Hand', cursive, sans-serif;
+            background-color: var(--paper-bg);
+            color: var(--ink-color);
+            background-image: 
+                radial-gradient(#cbd5e1 1px, transparent 1px),
+                linear-gradient(to right, rgba(203, 213, 225, 0.25) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(203, 213, 225, 0.25) 1px, transparent 1px);
+            background-size: 24px 24px, 48px 48px, 48px 48px;
+            letter-spacing: 0.3px;
+            margin: 0;
+            padding: 0;
+        }
+
+        .calligraphy-title {
+            font-family: 'Amiri', serif;
+        }
+
+        /* Kalemle Çizilmiş Eskiz Kutular */
+        .sketch-box {
+            background-color: #ffffff;
+            border: 2.5px solid var(--ink-color);
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+            box-shadow: 4px 4px 0px var(--ink-color);
+            transition: all 0.15s ease;
+        }
+
+        .sketch-box-alt {
+            background-color: #ffffff;
+            border: 2.5px solid var(--ink-color);
+            border-radius: 15px 225px 15px 255px / 255px 15px 225px 15px;
+            box-shadow: 3px 3px 0px var(--ink-color);
+        }
+
+        .sketch-btn {
+            border: 2.5px solid var(--ink-color);
+            border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px;
+            box-shadow: 3px 3px 0px var(--ink-color);
+            transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.15s ease;
+            cursor: pointer;
+            user-select: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            font-weight: bold;
+        }
+
+        .sketch-btn:hover:not(:disabled) {
+            transform: translate(-1px, -1px);
+            box-shadow: 4px 4px 0px var(--ink-color);
+        }
+
+        .sketch-btn:active:not(:disabled) {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px var(--ink-color);
+        }
+
+        .sketch-input {
+            border: 2px solid var(--ink-color);
+            border-radius: 12px 220px 15px 200px / 200px 15px 220px 12px;
+            background-color: #fffef9;
+            padding: 0.45rem 0.75rem;
+            font-size: 1.05rem;
+            outline: none;
+            transition: box-shadow 0.15s ease, background-color 0.15s ease;
+            width: 100%;
+        }
+
+        .sketch-input:focus {
+            background-color: #ffffff;
+            box-shadow: 3px 3px 0px var(--ink-color);
+        }
+
+        .sketch-input:disabled, .sketch-input[readonly] {
+            background-color: #f8fafc;
+            color: #334155;
+            cursor: default;
+            border-style: dashed;
+        }
+
+        /* Özel Kaydırma Çubuğu (İki panel birbirinden bağımsız) */
+        .custom-scroll::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-left: 1.5px solid #1e293b;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border: 1.5px solid #1e293b;
+            border-radius: 8px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* Gizli "Ders" Kelimesi: Normal metin gibi görünür ama tıklanabilir */
+        .secret-ders-word {
+            cursor: pointer;
+            position: relative;
+            display: inline-block;
+            border-bottom: 2px dashed rgba(30, 41, 59, 0.35);
+            transition: color 0.2s;
+        }
+        .secret-ders-word:hover {
+            color: #0f172a;
+            border-bottom-color: #0f172a;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.95); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: popIn 0.2s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-yellow-200">
+
+    <!-- Bildirim (Toast) Kutusu -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- Dinamik Kodların Ekleneceği Kapsayıcı (Geliştirici Modu İçin) -->
+    <div id="dev-dynamic-container"></div>
+
+    <!-- ==========================================
+         1. KARŞILAMA EKRANI (ANA SAYFA)
+         ========================================== -->
+    <section id="landing-screen" class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6">
+        <div class="sketch-box max-w-2xl w-full p-6 sm:p-10 text-center relative bg-white animate-pop">
+            
+            <!-- Köşe Süslemeleri (Kalem Çizimi) -->
+            <div class="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-slate-800 pointer-events-none"></div>
+            <div class="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-slate-800 pointer-events-none"></div>
+            <div class="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 border-slate-800 pointer-events-none"></div>
+            <div class="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-slate-800 pointer-events-none"></div>
+
+            <!-- Üst Hat / Besmele Süsü -->
+            <p class="calligraphy-title text-2xl sm:text-3xl text-slate-700 mb-2">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ</p>
+
+            <!-- Başlık: "Ders" kelimesine yönetici girişi gizlendi! (Madde 1) -->
+            <h1 class="text-3xl sm:text-5xl font-bold tracking-wide text-slate-900 mb-3 leading-tight">
+                <span id="secret-admin-trigger" onclick="openAdminLoginModal()" class="secret-ders-word" title="Ders">Ders</span> Takip ve Analiz
+            </h1>
+            <p class="text-lg sm:text-xl text-slate-600 mb-6">Medrese Talebe Yoklama, Kur'an-ı Kerim, Ezber ve Haftalık Analiz Defteri</p>
+
+            <!-- Kalem Çizimi Medrese & Rahle İllüstrasyonu (SVG) -->
+            <div class="my-4 flex justify-center">
+                <svg class="w-64 h-44 sm:w-80 sm:h-52" viewBox="0 0 400 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Zemin Çizgisi -->
+                    <path d="M20 235 C120 232, 280 238, 380 234" stroke="#1e293b" stroke-width="3.5" stroke-linecap="round"/>
+                    <path d="M50 243 C150 245, 250 241, 350 244" stroke="#1e293b" stroke-width="2" stroke-linecap="round" stroke-dasharray="6 6"/>
+                    
+                    <!-- Sol Minare -->
+                    <path d="M65 234 L65 85 L85 85 L85 234" fill="#f8fafc" stroke="#1e293b" stroke-width="3" stroke-linejoin="round"/>
+                    <path d="M60 85 L90 85 L85 75 L65 75 Z" fill="#fef08a" stroke="#1e293b" stroke-width="2.5" stroke-linejoin="round"/>
+                    <path d="M65 75 L75 35 L85 75 Z" fill="#cbd5e1" stroke="#1e293b" stroke-width="3" stroke-linejoin="round"/>
+                    <circle cx="75" cy="28" r="5" stroke="#1e293b" stroke-width="2.5"/>
+
+                    <!-- Sağ Minare -->
+                    <path d="M315 234 L315 85 L335 85 L335 234" fill="#f8fafc" stroke="#1e293b" stroke-width="3" stroke-linejoin="round"/>
+                    <path d="M310 85 L340 85 L335 75 L315 75 Z" fill="#fef08a" stroke="#1e293b" stroke-width="2.5" stroke-linejoin="round"/>
+                    <path d="M315 75 L325 35 L335 75 Z" fill="#cbd5e1" stroke="#1e293b" stroke-width="3" stroke-linejoin="round"/>
+                    <circle cx="325" cy="28" r="5" stroke="#1e293b" stroke-width="2.5"/>
+
+                    <!-- Medrese Ana Kubbe -->
+                    <path d="M115 140 C115 65, 285 65, 285 140 Z" fill="#fef08a" stroke="#1e293b" stroke-width="3.5" stroke-linejoin="round"/>
+                    <!-- Kubbe Alemi (Hilal) -->
+                    <path d="M200 82 L200 58" stroke="#1e293b" stroke-width="3" stroke-linecap="round"/>
+                    <path d="M192 50 C196 58, 206 58, 208 48 C203 53, 196 52, 192 50 Z" fill="#1e293b" stroke="#1e293b" stroke-width="2"/>
+
+                    <!-- Medrese Gövde Duvarı -->
+                    <rect x="100" y="140" width="200" height="94" fill="#ffffff" stroke="#1e293b" stroke-width="3.5" stroke-linejoin="round"/>
+                    
+                    <!-- Pencereler -->
+                    <path d="M122 185 L122 162 C122 152, 142 152, 142 162 L142 185 Z" fill="#bae6fd" stroke="#1e293b" stroke-width="2.5"/>
+                    <path d="M258 185 L258 162 C258 152, 278 152, 278 162 L278 185 Z" fill="#bae6fd" stroke="#1e293b" stroke-width="2.5"/>
+
+                    <!-- Ön Planda Rahle ve Açık Kur'an-ı Kerim Çizimi -->
+                    <path d="M160 232 L240 182 M240 232 L160 182" stroke="#1e293b" stroke-width="4.5" stroke-linecap="round"/>
+                    <path d="M150 184 Q200 202 250 184 L255 168 Q200 186 145 168 Z" fill="#fef9c3" stroke="#1e293b" stroke-width="3" stroke-linejoin="round"/>
+                    <path d="M200 176 L200 193" stroke="#1e293b" stroke-width="2.5"/>
+                </svg>
+            </div>
+
+            <!-- Bulut Bağlantı Durumu Göstergesi -->
+            <div id="landing-cloud-badge" class="mb-5 inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm border border-slate-700 bg-slate-100">
+                <span id="landing-cloud-dot" class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                <span id="landing-cloud-text">Yerel Hafıza Modu (Bulut Bekleniyor)</span>
+            </div>
+
+            <!-- Giriş Butonu (Veli Girişi) -->
+            <div class="flex flex-col sm:flex-row justify-center gap-4 mt-2">
+                <button onclick="openParentLoginModal()" class="sketch-btn bg-yellow-300 hover:bg-yellow-400 text-slate-900 text-xl sm:text-2xl px-10 py-3.5">
+                    <span>🚪 Talebe / Veli Girişi</span>
+                </button>
+                <button id="pwa-install-btn-landing" onclick="triggerPWAInstall()" class="sketch-btn bg-sky-200 hover:bg-sky-300 text-slate-900 text-lg px-6 py-3">
+                    <span>📲 Programa Ekle (Masaüstü/Tel)</span>
+                </button>
+            </div>
+
+            <p class="text-sm text-slate-500 mt-6">
+                Velilerimiz kendilerine verilen <strong>Talebe Şifresi</strong> ile giriş yaparak ders, ödev ve analiz raporlarını inceleyebilirler.
+            </p>
+        </div>
+    </section>
+
+    <!-- ==========================================
+         2. ANA UYGULAMA EKRANI (PANEL)
+         ========================================== -->
+    <section id="app-screen" class="hidden h-screen flex flex-col overflow-hidden">
+        
+        <!-- ÜST BAR (SABİT BAŞLIK VE ARAÇLAR) -->
+        <header class="bg-white border-b-[3px] border-slate-800 px-3 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2 shrink-0 z-20 shadow-sm">
+            <div class="flex items-center gap-3">
+                <!-- Küçük Rahle Logosu -->
+                <div class="w-10 h-10 rounded-xl border-2 border-slate-800 bg-yellow-200 flex items-center justify-center shadow-[2px_2px_0px_#1e293b]">
+                    <span class="text-xl">📖</span>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-xl sm:text-2xl font-bold leading-none">
+                            <span onclick="openAdminLoginModal()" class="secret-ders-word">Ders</span> Takip ve Analiz
+                        </h2>
+                        <span id="role-badge" class="text-xs sm:text-sm px-2.5 py-0.5 rounded-full border-2 border-slate-800 font-bold bg-emerald-200">
+                            Yönetici Modu
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs sm:text-sm text-slate-600 mt-0.5">
+                        <span id="sync-status-indicator" class="inline-flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-full bg-amber-500"></span> Yerel Kayıt
+                        </span>
+                        <span>•</span>
+                        <span id="last-sync-time">Son Güncelleme: Şimdi</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sağ Üst Kontrol Butonları -->
+            <div class="flex items-center flex-wrap gap-2">
+
+                <!-- YENİ EKLENEN BUTON: Kod Geliştirme (Yönetici) -->
+                <button id="btn-dev-update" onclick="openDevUpdateModal()" class="sketch-btn bg-fuchsia-200 hover:bg-fuchsia-300 text-slate-900 px-3 py-1.5 text-sm sm:text-base hidden" title="Anlık olarak koda ekleme yapın (HTML, JS, CSS)">
+                    <span>🛠️ Kod Ekle</span>
+                </button>
+
+                <!-- Olduğun Yerde Yenileme Butonu (Madde 11) -->
+                <button onclick="refreshInPlace()" class="sketch-btn bg-emerald-200 hover:bg-emerald-300 text-slate-900 px-3 py-1.5 text-sm sm:text-base" title="Sayfayı kapatmadan ve yerini kaybetmeden güncel verileri çeker">
+                    <span id="refresh-icon">🔄</span> <span>Yenile</span>
+                </button>
+
+                <!-- Yöneticiye Özel: Firebase / Bulut Ayarları -->
+                <button id="btn-cloud-settings" onclick="openCloudModal()" class="sketch-btn bg-sky-200 hover:bg-sky-300 text-slate-900 px-3 py-1.5 text-sm sm:text-base hidden">
+                    <span>☁️ Firebase Bulut</span>
+                </button>
+
+                <!-- Yöneticiye Özel: Şifre Değiştir -->
+                <button id="btn-admin-pass" onclick="openChangeAdminPassModal()" class="sketch-btn bg-amber-200 hover:bg-amber-300 text-slate-900 px-3 py-1.5 text-sm sm:text-base hidden">
+                    <span>🔑 Şifre</span>
+                </button>
+
+                <!-- Masaüstüne / Telefona Kur Butonu (Madde 10) -->
+                <button onclick="openInstallHelpModal()" class="sketch-btn bg-purple-200 hover:bg-purple-300 text-slate-900 px-3 py-1.5 text-sm sm:text-base" title="Masaüstüne veya Telefona Uygulama Olarak Ekle">
+                    <span>📲 Uygulama</span>
+                </button>
+
+                <!-- Çıkış Yap Butonu -->
+                <button onclick="logoutSession()" class="sketch-btn bg-rose-200 hover:bg-rose-300 text-slate-900 px-3 py-1.5 text-sm sm:text-base">
+                    <span>🚪 Çıkış</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ANA GÖVDE: SOL VE SAĞ BİRBİRİNDEN BAĞIMSIZ İKİ PENCERE (Madde 2 ve 13) -->
+        <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+            
+            <!-- SOL PENCERE: TALEBE İSİM LİSTESİ, ŞİFRE, NUMARA VE İZİN/DEVAMSIZLIK (Madde 2, 3, 4, 9) -->
+            <aside id="left-student-panel" class="w-full md:w-80 lg:w-96 border-b-[3px] md:border-b-0 md:border-r-[3px] border-slate-800 bg-[#faf7f0] flex flex-col max-h-[38vh] md:max-h-none md:h-full shrink-0">
+                
+                <!-- Sol Panel Üst Başlık & Yeni Talebe Ekle (Yöneticiye Açık) -->
+                <div class="p-3 border-b-2 border-dashed border-slate-700 flex items-center justify-between bg-white/70 shrink-0">
+                    <div>
+                        <h3 class="text-lg sm:text-xl font-bold text-slate-900">👥 Talebe Listesi</h3>
+                        <p id="student-count-label" class="text-xs text-slate-600">Toplam 0 Talebe</p>
+                    </div>
+                    <button id="btn-add-student" onclick="openStudentModal()" class="sketch-btn bg-yellow-300 hover:bg-yellow-400 text-slate-900 px-3 py-1 text-sm hidden">
+                        <span>➕ Yeni Talebe</span>
+                    </button>
+                </div>
+
+                <!-- Arama Kutusu (Yönetici için kolaylık) -->
+                <div id="student-search-wrapper" class="px-3 pt-2 pb-1 shrink-0 hidden">
+                    <input type="text" id="student-search-input" oninput="renderStudentList()" placeholder="🔍 Talebe ara..." class="sketch-input text-sm py-1">
+                </div>
+
+                <!-- Bağımsız Kaydırılabilir Talebe Listesi -->
+                <div id="student-list-container" class="flex-1 overflow-y-auto custom-scroll p-3 space-y-3">
+                    <!-- JS ile doldurulacak -->
+                </div>
+            </aside>
+
+            <!-- SAĞ PENCERE: AYLAR, HAFTALAR, DERS NOTU VE ANALİZ KISMI (Madde 5, 6, 7, 13) -->
+            <main id="right-workspace-panel" class="flex-1 h-full overflow-y-auto custom-scroll p-3 sm:p-6 space-y-6">
+                <!-- JS ile seçili talebenin aylar, haftalar, günlük notlar ve 3D analiz ekranı buraya çizilecek -->
+            </main>
+
+        </div>
+    </section>
+
+    <!-- ==========================================
+         3. MODALLAR (PENCERELER)
+         ========================================== -->
+
+    <!-- MODAL 1: YÖNETİCİ GİRİŞİ VE ŞİFRE SIFIRLAMA (Güvenlik Kodu: medrese / İpucu: med......) -->
+    <div id="modal-admin-login" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="sketch-box max-w-md w-full p-6 bg-white animate-pop relative">
+            <button onclick="closeModal('modal-admin-login')" class="absolute top-3 right-3 sketch-btn bg-rose-200 px-2.5 py-0.5 text-sm">✕</button>
+            
+            <h3 class="text-2xl font-bold mb-1">🔐 Hoca / Yönetici Girişi</h3>
+            <p class="text-sm text-slate-600 mb-4">"Ders" kelimesindeki gizli yönetici kapısından girdiniz.</p>
+
+            <!-- Normal Şifre Giriş Bölümü -->
+            <div id="admin-login-standard">
+                <label class="block text-base font-bold mb-1">Yönetici Şifresi:</label>
+                <input type="password" id="admin-pass-input" onkeydown="if(event.key==='Enter') handleAdminLogin()" placeholder="Şifrenizi yazın..." class="sketch-input mb-3">
+                
+                <div class="flex items-center justify-between gap-2 mt-4">
+                    <button onclick="toggleAdminResetView(true)" class="text-sm underline text-slate-700 hover:text-slate-900 cursor-pointer">
+                        Şifremi Unuttum / Sıfırla
+                    </button>
+                    <button onclick="handleAdminLogin()" class="sketch-btn bg-emerald-300 hover:bg-emerald-400 px-6 py-2 text-lg">
+                        ✅ Yönetici Gir
+                    </button>
+                </div>
+            </div>
+
+            <!-- Güvenlik Kodu İle Şifre Sıfırlama Bölümü -->
+            <div id="admin-login-reset" class="hidden border-t-2 border-dashed border-slate-400 pt-3 mt-2">
+                <div class="bg-yellow-100 border-2 border-slate-800 rounded-xl p-2.5 mb-3 text-sm">
+                    💡 <strong>Güvenlik Kodu İpucu:</strong> <code class="font-bold text-base">med......</code> (Baştaki 3 harfi)
+                </div>
+                <label class="block text-sm font-bold mb-1">Güvenlik Kodu:</label>
+                <input type="text" id="admin-security-code-input" placeholder="Güvenlik kodunu girin..." class="sketch-input mb-2">
+                
+                <label class="block text-sm font-bold mb-1">Yeni Yönetici Şifresi:</label>
+                <input type="text" id="admin-new-pass-reset" placeholder="Yeni şifrenizi belirleyin..." class="sketch-input mb-3">
+
+                <div class="flex justify-between items-center">
+                    <button onclick="toggleAdminResetView(false)" class="text-sm underline text-slate-600">← Geri Dön</button>
+                    <button onclick="handleAdminResetPassword()" class="sketch-btn bg-amber-300 hover:bg-amber-400 px-4 py-1.5 text-base">
+                        🔄 Şifreyi Yenile ve Gir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: VELİ / TALEBE GİRİŞİ -->
+    <div id="modal-parent-login" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="sketch-box max-w-md w-full p-6 bg-white animate-pop relative">
+            <button onclick="closeModal('modal-parent-login')" class="absolute top-3 right-3 sketch-btn bg-rose-200 px-2.5 py-0.5 text-sm">✕</button>
+            
+            <h3 class="text-2xl font-bold mb-1">👨‍👦 Veli / Talebe Girişi</h3>
+            <p class="text-sm text-slate-600 mb-4">Hocanızın talebeniz için belirlediği özel şifreyi giriniz. (Bir kez girdiğinizde cihazınız sizi hatırlar).</p>
+
+            <label class="block text-base font-bold mb-1">Talebe Özel Şifresi:</label>
+            <input type="password" id="parent-pass-input" onkeydown="if(event.key==='Enter') handleParentLogin()" placeholder="Örn: 1453" class="sketch-input mb-4 text-center text-xl tracking-widest">
+
+            <div class="flex justify-end gap-2">
+                <button onclick="closeModal('modal-parent-login')" class="sketch-btn bg-slate-200 px-4 py-2">İptal</button>
+                <button onclick="handleParentLogin()" class="sketch-btn bg-yellow-300 hover:bg-yellow-400 px-6 py-2 text-lg">
+                    🚪 Notları Gör
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- YENİ MODAL: ANLIK KOD GÜNCELLEME (GELİŞTİRİCİ MODU) -->
+    <div id="modal-dev-update" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="sketch-box max-w-2xl w-full p-6 bg-white animate-pop relative">
+            <button onclick="closeModal('modal-dev-update')" class="absolute top-3 right-3 sketch-btn bg-rose-200 px-2.5 py-0.5 text-sm">✕</button>
+            <h3 class="text-2xl font-bold mb-2 flex items-center gap-2">
+                <span>🛠️</span> Anlık Kod Ekle / Çalıştır
+            </h3>
+            <p class="text-sm text-slate-600 mb-4">Ufak değişiklikleri (JavaScript, CSS veya HTML) sayfaya anında enjekte etmek ve test etmek için buraya yapıştırıp çalıştırabilirsiniz.</p>
+            
+            <textarea id="dev-code-input" rows="8" placeholder="<style>... </style> veya JavaScript kodlarınızı buraya yapıştırın..." class="sketch-input font-mono text-sm w-full mb-3"></textarea>
+            
+            <div class="flex justify-end gap-2 mt-2">
+                <button onclick="closeModal('modal-dev-update')" class="sketch-btn bg-slate-200 px-4 py-2">İptal</button>
+                <button onclick="applyDynamicCode()" class="sketch-btn bg-fuchsia-300 hover:bg-fuchsia-400 px-5 py-2 text-lg">
+                    ⚡ Kodu Sayfaya Enjekte Et
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: YENİ TALEBE EKLE / DÜZENLE -->
+    <div id="modal-student-form" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="sketch-box max-w-md w-full p-6 bg-white animate-pop relative">
+            <button onclick="closeModal('modal-student-form')" class="absolute top-3 right-3 sketch-btn bg-rose-200 px-2.5 py-0.5 text-sm">✕</button>
+            
+            <h3 id="student-modal-title" class="text-2xl font-bold mb-4">➕ Yeni Talebe Ekle</h3>
+            <input type="hidden" id="form-student-id">
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-sm font-bold mb-1">Talebe Adı Soyadı:</label>
+                    <input type="text" id="form-student-name" placeholder="Örn: Yusuf Akçay" class="sketch-input">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1">Veli WhatsApp Numarası:</label>
+                    <input type="tel" id="form-student-phone" placeholder="Örn: 0532 123 45 67" class="sketch-input">
+                    <p class="text-xs text-slate-500 mt-0.5">Ödev ve Cuma analizleri bu numaraya WhatsApp'tan gönderilir.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1">Veli Giriş Şifresi (Bu Talebeye Özel):</label>
+                    <input type="text" id="form-student-pass" placeholder="Örn: yusuf123 veya 4512" class="sketch-input">
+                    <p class="text-xs text-slate-500 mt-0.5">Veli bu şifreyle girdiğinde sadece kendi oğlunu görebilir.</p>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 mt-6">
+                <button onclick="closeModal('modal-student-form')" class="sketch-btn bg-slate-200 px-4 py-2">İptal</button>
+                <button onclick="saveStudentForm()" class="sketch-btn bg-emerald-300 hover:bg-emerald-400 px-6 py-2 text-lg">
+                    💾 Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: TALEBE SİLME ONAYI (alert/confirm yasak olduğu için özel eskiz pencere) -->
+    <div id="modal-delete-confirm" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="sketch-box max-w-sm w-full p-6 bg-white animate-pop text-center">
+            <div class="text-4xl mb-2">⚠️</div>
+            <h3 class="text-xl font-bold mb-2">Talebeyi Silmek İstiyor Musunuz?</h3>
+            <p id="delete-student-desc" class="text-sm text-slate-600 mb-5"></p>
+            <div class="flex justify-center gap-3">
+                <button onclick="closeModal('modal-delete-confirm')" class="sketch-btn bg-slate-200 px-5 py-2">Vazgeç</button>
+                <button id="confirm-delete-btn" class="sketch-btn bg-rose-300 hover:bg-rose-400 px-5 py-2">🗑️ Evet, Sil</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 5: GELMEDİĞİ GÜN / İZİN İŞARETLEME PENCERESİ (Madde 9 - Veli ve Yönetici İşaretleyebilir) -->
+    <div id="modal-absence" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="sketch-box max-w-lg w-full p-6 bg-white animate-pop relative max-h-[90vh] flex flex-col">
+            <button onclick="closeModal('modal-absence')" class="absolute top-3 right-3 sketch-btn bg-rose-200 px-2.5 py-0.5 text-sm">✕</button>
+            
+            <h3 class="text-2xl font-bold mb-1">🗓️ İzin / Gelmediği Gün Bildirimi</h3>
+            <p id="absence-student-subtitle" class="text-sm text-slate-600 mb-3"></p>
+
+            <!-- Yeni İzin/Devamsızlık Ekleme Formu -->
+            <div class="sketch-box-alt p-3.5 bg-amber-50/70 mb-4 space-y-2.5">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-xs font-bold">Ay Seçin:</label>
+                        <select id="absence-month" class="sketch-input py-1 text-sm"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold">Hafta Seçin:</label>
+                        <select id="absence-week" class="sketch-input py-1 text-sm">
+                            <option value="1">1. Hafta</option>
+                            <option value="2">2. Hafta</option>
+                            <option value="3">3. Hafta</option>
+                            <option value="4">4. Hafta</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold">Gün / Süre:</label>
+                        <select id="absence-day" class="sketch-input py-1 text-sm">
+                            <option value="Pazartesi">Pazartesi</option>
+                            <option value="Salı">Salı</option>
+                            <option value="Çarşamba">Çarşamba</option>
+                            <option value="Perşembe">Perşembe</option>
+                            <option value="Cuma">Cuma</option>
+                            <option value="Tüm Hafta İzinli">Tüm Hafta İzinli</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <input type="text" id="absence-reason" placeholder="Durum / Mazeret (Örn: İzinli - Misafirlik, Hasta, Gelemeyecek)" class="sketch-input py-1 text-sm flex-1">
+                    <button onclick="addAbsenceRecord()" class="sketch-btn bg-amber-300 hover:bg-amber-400 px-4 py-1.5 text-sm shrink-0">
+                        📌 İşaretle / Kaydet
+                    </button>
+                </div>
+            </div>
+
+            <!-- Kayıtlı İzin ve Devamsızlık Listesi -->
+            <h4 class="font-bold text-sm text-slate-700 mb-1.5">Kayıtlı İzin / Devamsızlık Günleri:</h4>
+            <div id="absence-history-list" class="flex-1 overflow-y-auto custom-scroll space-y-2 pr-1">
+                <!-- JS ile doldurulacak -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 6: YÖNETİCİ ŞİFRE DEĞİŞTİRME -->
+    <div id="modal-change-admin-pass" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="sketch-box max-w-md w-full p-6 bg-white animate-pop relative">
+            <button onclick="closeModal('modal-change-admin-pass')" class="absolute top-3 right-3 sketch-btn bg-rose-200 px-2.5 py-0.5 text-sm">✕</button>
+            <h3 class="text-2xl font-bold mb-2">🔑 Yönetici Şifresini Değiştir</h3>
+            
+            <div class="bg-yellow-100 border-2 border-slate-800 rounded-xl p-2.5 mb-3 text-sm">
+                🛡️ <strong>Güvenlik Kodu İpucu:</strong> <code class="font-bold">med......</code>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-sm font-bold mb-1">Güvenlik Kodu (Zorunlu):</label>
+                    <input type="text" id="change-sec-code" placeholder="Güvenlik kodunu yazın..." class="sketch-input">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1">Yeni Yönetici Şifresi:</label>
+                    <input type="text" id="change-new-pass" placeholder="Yeni şifreniz..." class="sketch-input">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 mt-5">
+                <button onclick="closeModal('modal-change-admin-pass')" class="sketch-btn bg-slate-200 px-4 py-2">İptal</button>
+                <button onclick="saveNewAdminPassword()" class="sketch-btn bg-emerald-300 hover:bg-emerald-400 px-5 py-2">
+                    💾 Şifreyi Güncelle
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 7: FIREBASE / BULUT BAĞLANTI AYARLARI (Kod içine gömülü değil, dinamik kutu!) -->
+    <div id="modal-cloud-settings" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="sketch-box max-w-xl w-full p-6 bg-white animate-pop relative max-h-[92vh] overflow-y-auto custom-scroll">
+            <button onclick="closeModal('modal-cloud-settings')" class="absolute top-3 right-3 sketch-btn bg-rose-200 px-2.5 py-0.5 text-sm">✕</button>
+            
+            <h3 class="text-2xl font-bold mb-1">☁️ Canlı Bulut (Firebase) Ayarları</h3>
+            <p class="text-sm text-slate-600 mb-4">
+                Saat 16:00'da ödevleri ve notları girdiğinizde velilerin anında kendi telefonlarından görmesi için Firebase Realtime Database bağlantınızı buraya yapıştırın. İleride değiştirirseniz kodlarla uğraşmadan buradan güncelleyebilirsiniz.
+            </p>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-sm font-bold mb-1">Firebase Linki (Database URL) veya Config Bloğu:</label>
+                    <textarea id="firebase-url-input" rows="3" placeholder="Örn: https://medrese-takip-default-rtdb.europe-west1.firebasedatabase.app/  (veya komple firebaseConfig kodunu yapıştırabilirsiniz)" class="sketch-input font-mono text-sm"></textarea>
+                    <p class="text-xs text-slate-500 mt-1">
+                        💡 İpucu: Firebase konsol에서 <strong>Realtime Database</strong> açıp kuralları (Rules) <code>".read": true, ".write": true</code> yaptıktan sonra verilen <code>https://...firebaseio.com</code> veya <code>...firebasedatabase.app</code> linkini yapıştırmanız yeterlidir.
+                    </p>
+                </div>
+
+                <div class="flex flex-wrap gap-2 pt-1">
+                    <button onclick="saveAndTestFirebase()" class="sketch-btn bg-emerald-300 hover:bg-emerald-400 px-4 py-2 text-base">
+                        ☁️ Bağlantıyı Kaydet ve Şimdi Senkronize Et
+                    </button>
+                    <button onclick="pullFromCloud(true)" class="sketch-btn bg-sky-200 hover:bg-sky-300 px-4 py-2 text-base">
+                        📥 Buluttan Verileri Çek
+                    </button>
+                </div>
+
+                <!-- Veliler İçin Otomatik Bağlantılı Giriş Linki Üretici -->
+                <div class="sketch-box-alt p-3.5 bg-yellow-50 mt-4">
+                    <h4 class="font-bold text-base mb-1">🔗 Velilere Gönderilecek Hazır Site Linki</h4>
+                    <p class="text-xs text-slate-600 mb-2">
+                        Bu linkin içinde sizin Firebase bulut adresiniz otomatik gömülüdür. Veliler bu linke tıkladığında hiçbir ayar yapmadan doğrudan sizin bulutunuza bağlanır:
+                    </p>
+                    <div class="flex gap-2">
+                        <input type="text" id="shareable-parent-link" readonly class="sketch-input text-xs font-mono bg-white">
+                        <button onclick="copyShareableParentLink()" class="sketch-btn bg-yellow-300 hover:bg-yellow-400 px-3 py-1 text-sm shrink-0">
+                            📋 Kopyala
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 8: MASAÜSTÜNE VE TELEFONA PROGRAM OLARAK EKLEME REHBERİ (Madde 10) -->
+    <div id="modal-install-help" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="sketch-box max-w-md w-full p-6 bg-white animate-pop relative">
+            <button onclick="closeModal('modal-install-help')" class="absolute top-3 right-3 sketch-btn bg-rose-200 px-2.5 py-0.5 text-sm">✕</button>
+            
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-12 h-12 rounded-2xl border-2 border-slate-800 bg-yellow-200 flex items-center justify-center text-2xl shadow-[3px_3px_0px_#1e293b]">📖</div>
+                <div>
+                    <h3 class="text-2xl font-bold leading-tight">Uygulama Olarak Ekle</h3>
+                    <p class="text-xs text-slate-600">Masaüstü ve Telefon Ana Ekran Kurulumu</p>
+                </div>
+            </div>
+
+            <div class="space-y-3 text-sm text-slate-700">
+                <button id="pwa-install-btn-modal" onclick="triggerPWAInstall()" class="sketch-btn bg-emerald-300 hover:bg-emerald-400 w-full py-2.5 text-base hidden">
+                    📥 Tek Tıkla Cihaza Kur
+                </button>
+
+                <div class="sketch-box-alt p-3 bg-slate-50">
+                    <p class="font-bold text-slate-900 mb-1">📱 Android / iPhone Telefona Ekleme:</p>
+                    <p>Tarayıcınızın sağ üst (Chrome) veya alt (Safari) menüsünden <strong>"Ana Ekrana Ekle"</strong> veya <strong>"Uygulamayı Yükle"</strong> seçeneğine dokunun. Özel Rahle simgesiyle telefonunuza uygulama olarak inecektir.</p>
+                </div>
+
+                <div class="sketch-box-alt p-3 bg-slate-50">
+                    <p class="font-bold text-slate-900 mb-1">💻 Bilgisayar Masaüstüne Ekleme:</p>
+                    <p>Chrome veya Edge adres çubuğunun sağ ucundaki <strong>"Yükle / Bilgisayar"</strong> simgesine tıklayın veya Sağ Üst Menü &rarr; <em>Kaydet ve Paylaş</em> &rarr; <strong>Sayfayı Uygulama Olarak Yükle</strong>'ye basın.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         JAVASCRIPT UYGULAMA MİMARİSİ
+         ========================================== -->
+    <script>
+        /**************************************************************
+         * 1. SABİTLER VE VARSAYILAN VERİ YAPISI
+         **************************************************************/
+        const STORAGE_KEY_DATA = 'medrese_takip_db_v1';
+        const STORAGE_KEY_SESSION = 'medrese_takip_session_v1';
+        const STORAGE_KEY_FIREBASE = 'medrese_takip_firebase_url_v1';
+        const SECURITY_CODE = 'medrese'; // İpucu: med......
+
+        const MONTHS = [
+            'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+            'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+        ];
+        const WEEKS = [1, 2, 3, 4];
+        const DAYS = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma'];
+
+        // Kur'an-ı Kerim Harf ve Tecvid Eksik Yakalama Sözlüğü (Cuma Analizi İçin)
+        const ARABIC_LETTER_KEYWORDS = [
+            { key: 'sad', label: 'Sad (ص) Harfi' },
+            { key: 'dat', label: 'Dad (ض) Harfi' },
+            { key: 'dad', label: 'Dad (ض) Harfi' },
+            { key: 'peltek', label: 'Peltek Harfler (ث / ذ / ظ)' },
+            { key: 'zel', label: 'Zel (ذ) Harfi' },
+            { key: 'se ', label: 'Peltek Se (ث) Harfi' },
+            { key: 'zı', label: 'Zı (ظ) Harfi' },
+            { key: 'tı', label: 'Tı (ط) Harfi' },
+            { key: 'ayın', label: 'Ayın (ع) Harfi' },
+            { key: 'ayn', label: 'Ayın (ع) Harfi' },
+            { key: 'ğayın', label: 'Ğayın (غ) Harfi' },
+            { key: 'ha ', label: 'Boğaz Ha (ح / خ) Harfi' },
+            { key: 'hı', label: 'Hı (خ) Harfi' },
+            { key: 'kaf', label: 'Kaf (ق) Harfi' },
+            { key: 'ra ', label: 'Ra (ر) Harfi Hükmü' },
+            { key: 'mahreç', label: 'Harf Mahreçleri' },
+            { key: 'mahrec', label: 'Harf Mahreçleri' },
+            { key: 'tecvid', label: 'Tecvid Kuralları' },
+            { key: 'tecwid', label: 'Tecvid Kuralları' },
+            { key: 'idğam', label: 'İdğam Kuralları' },
+            { key: 'idgam', label: 'İdğam Kuralları' },
+            { key: 'ihfa', label: 'İhfa Kuralı' },
+            { key: 'izhar', label: 'İzhar Kuralı' },
+            { key: 'iklab', label: 'İklab Kuralı' },
+            { key: 'gunne', label: 'Gunne / Geniz Sesi' },
+            { key: 'med', label: 'Med (Uzatma) Ölçüleri' },
+            { key: 'uzatma', label: 'Med (Uzatma) Ölçüleri' },
+            { key: 'kalkale', label: 'Kalkale Harfleri' },
+            { key: 'hareke', label: 'Hareke Dikkat Eksikliği' },
+            { key: 'akıcı', label: 'Akıcı Okuma / Yüzünden Tekrar' },
+            { key: 'ezber', label: 'Ezber Sağlamlaştırma' }
+        ];
+
+        // Uygulama Durumu (State)
+        let appData = null;
+        let sessionState = {
+            loggedIn: false,
+            role: null,              // 'admin' veya 'parent'
+            studentId: null,         // Seçili talebe ID
+            openMonth: 'Mart',       // Açık olan ay (tıklayınca kapanıp açılabilir)
+            selectedWeek: 1          // Seçili hafta (1..4)
+        };
+        let firebaseDbUrl = '';
+        let saveDebounceTimer = null;
+        let pendingDeleteStudentId = null;
+        let deferredPwaPrompt = null;
+
+        /**************************************************************
+         * 2. BAŞLANGIÇ (INIT) VE VARSAYILAN VERİ OLUŞTURMA
+         **************************************************************/
+        function createDefaultDatabase() {
+            return {
+                adminPass: '2618654', // Kullanıcının istediği varsayılan şifre
+                updatedAt: Date.now(),
+                students: [
+                    {
+                        id: 'stu_yusuf',
+                        name: 'Yusuf Akçay',
+                        phone: '0532 000 00 00',
+                        password: '1234',
+                        absences: [
+                            { id: 'abs_1', month: 'Mart', week: 1, day: 'Çarşamba', reason: 'İzinli (Aile ziyareti)', date: 'Mart - 1. Hafta' }
+                        ],
+                        records: {
+                            'Mart': {
+                                '1': {
+                                    'Pazartesi': {
+                                        kuranPlace: '82. Sayfa (10 Tekrar)',
+                                        kuranScore: '85',
+                                        kuranNote: 'Sad harfini düzelt, mahrecine dikkat edelim.',
+                                        ezberPlace: 'Leyl Suresi 1-10',
+                                        ezberScore: '90',
+                                        ezberNote: 'Ezber gayet güzel, tebrikler.'
+                                    },
+                                    'Salı': {
+                                        kuranPlace: '83. Sayfa (10 Tekrar)',
+                                        kuranScore: '80',
+                                        kuranNote: 'Sad harfi yine ince kaçıyor, sad harfini kalınlaştıralım ve med uzatmalarına dikkat.',
+                                        ezberPlace: 'Leyl Suresi Tamamı',
+                                        ezberScore: '95',
+                                        ezberNote: 'Leyl suresi tamamlandı, çok başarılı.'
+                                    },
+                                    'Çarşamba': {
+                                        kuranPlace: 'İzinli',
+                                        kuranScore: '',
+                                        kuranNote: 'Bugün izinli olduğu için ders yapılmadı.',
+                                        ezberPlace: 'Leyl Suresi Tekrar',
+                                        ezberScore: '',
+                                        ezberNote: ''
+                                    },
+                                    'Perşembe': {
+                                        kuranPlace: '84. Sayfa (10 Tekrar)',
+                                        kuranScore: '88',
+                                        kuranNote: 'Okuma hızlandı fakat med ölçülerine özen gösterelim.',
+                                        ezberPlace: 'Şems Suresi 1-8',
+                                        ezberScore: '92',
+                                        ezberNote: 'Akıcı okudu.'
+                                    },
+                                    'Cuma': {
+                                        kuranPlace: '85. Sayfa + Haftalık Tekrar',
+                                        kuranScore: '92',
+                                        kuranNote: 'Genel durumu çok iyi, sad harfinde gelişme var.',
+                                        ezberPlace: 'Şems Suresi Tamamı',
+                                        ezberScore: '96',
+                                        ezberNote: 'Maşallah, haftalık ezber hedefi eksiksiz bitti.'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            };
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            setupPWAFeatures();
+            populateAbsenceMonths();
+
+            // 1. URL'de ?fb=... parametresi varsa (Velilere gönderilen hazır linkten geldiyse) otomatik kaydet
+            const urlParams = new URLSearchParams(window.location.search);
+            const fbFromUrl = urlParams.get('fb');
+            if (fbFromUrl) {
+                const cleaned = normalizeFirebaseUrl(fbFromUrl);
+                if (cleaned) {
+                    localStorage.setItem(STORAGE_KEY_FIREBASE, cleaned);
+                }
+            }
+
+            // 2. Kayıtlı Firebase URL'sini yükle
+            firebaseDbUrl = localStorage.getItem(STORAGE_KEY_FIREBASE) || '';
+            updateShareableLinkInput();
+
+            // 3. Yerel veriyi yükle
+            const rawLocal = localStorage.getItem(STORAGE_KEY_DATA);
+            if (rawLocal) {
+                try {
+                    appData = JSON.parse(rawLocal);
+                } catch (e) {
+                    appData = createDefaultDatabase();
+                }
+            } else {
+                appData = createDefaultDatabase();
+                saveToLocal();
+            }
+
+            // 4. Kayıtlı oturumu (Beni Hatırla - Madde 11) yükle
+            const rawSession = localStorage.getItem(STORAGE_KEY_SESSION);
+            if (rawSession) {
+                try {
+                    const parsedSession = JSON.parse(rawSession);
+                    sessionState = { ...sessionState, ...parsedSession };
+                } catch (e) {}
+            }
+
+            // 5. Eğer Firebase bağlıysa açılışta en güncel veriyi buluttan çek
+            updateCloudStatusUI();
+            if (firebaseDbUrl) {
+                await pullFromCloud(false);
+            }
+
+            // 6. Oturum açıksa doğrudan kaldığı ekrana (aynı talebe, aynı ay, aynı hafta) sok!
+            if (sessionState.loggedIn) {
+                validateAndEnterSession();
+            }
+        });
+
+        // ================= KOD GELİŞTİRME (DEV MODE) BAŞLANGIÇ =================
+        function openDevUpdateModal() {
+            if (sessionState.role !== 'admin') return;
+            document.getElementById('dev-code-input').value = '';
+            openModal('modal-dev-update');
+        }
+
+        function applyDynamicCode() {
+            const code = document.getElementById('dev-code-input').value.trim();
+            if (!code) {
+                showToast('Lütfen eklenecek kodu girin.', 'warn');
+                return;
+            }
+            
+            try {
+                // Eğer kod HTML veya CSS tag'i içeriyorsa DOM'a ekle
+                if (code.includes('<style') || code.includes('<script') || code.includes('<div')) {
+                    const container = document.getElementById('dev-dynamic-container');
+                    const range = document.createRange();
+                    range.selectNode(document.body);
+                    const documentFragment = range.createContextualFragment(code);
+                    container.appendChild(documentFragment);
+                    showToast('✅ HTML/CSS/JS bileşenleri sayfaya başarıyla eklendi!', 'success');
+                } else {
+                    // Sadece JavaScript ise çalıştır
+                    eval(code);
+                    showToast('✅ JavaScript kodu başarıyla çalıştırıldı!', 'success');
+                }
+                closeModal('modal-dev-update');
+            } catch (err) {
+                console.error(err);
+                showToast('⚠️ Hata: ' + err.message, 'error');
+            }
+        }
+        // ================= KOD GELİŞTİRME (DEV MODE) BİTİŞ =================
+
+        /**************************************************************
+         * 3. FIREBASE BULUT SENKRONİZASYONU (REST JSON API)
+         **************************************************************/
+        function normalizeFirebaseUrl(inputStr) {
+            if (!inputStr) return '';
+            const trimmed = inputStr.trim();
+            // Kullanıcı komple firebaseConfig yapıştırdıysa içinden databaseURL'yi ayıkla
+            const matchConfig = trimmed.match(/https:\/\/[a-zA-Z0-9-]+\.(?:firebaseio\.com|[a-zA-Z0-9-]+\.firebasedatabase\.app)/);
+            if (matchConfig) {
+                return matchConfig[0].replace(/\/+$/, '');
+            }
+            if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+                return trimmed.replace(/\/medrese_data\.json.*$/i, '').replace(/\.json.*$/i, '').replace(/\/+$/, '');
+            }
+            return '';
+        }
+
+        function updateCloudStatusUI(state = 'idle') {
+            const landingDot = document.getElementById('landing-cloud-dot');
+            const landingText = document.getElementById('landing-cloud-text');
+            const headerIndicator = document.getElementById('sync-status-indicator');
+
+            if (!firebaseDbUrl) {
+                landingDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
+                landingText.textContent = 'Yerel Hafıza Modu (Yönetici Panelinden Firebase Eklenebilir)';
+                if (headerIndicator) {
+                    headerIndicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> Yerel Kayıt Modu`;
+                }
+                return;
+            }
+
+            if (state === 'syncing') {
+                if (headerIndicator) {
+                    headerIndicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-sky-500 animate-ping"></span> Bulut Senkronize Ediliyor...`;
+                }
+            } else if (state === 'ok') {
+                landingDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+                landingText.textContent = 'Canlı Firebase Bulut Bağlantısı Aktif';
+                if (headerIndicator) {
+                    headerIndicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> ☁️ Bulut Senkronize`;
+                }
+                const nowStr = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                const timeEl = document.getElementById('last-sync-time');
+                if (timeEl) timeEl.textContent = `Son Güncelleme: ${nowStr}`;
+            } else if (state === 'error') {
+                landingDot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500';
+                landingText.textContent = 'Bulut Bağlantı Uyarısı (Yerel Kayıt Devrede)';
+                if (headerIndicator) {
+                    headerIndicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> Bulut Hatası (Yerel Kaydedildi)`;
+                }
+            } else {
+                landingDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+                landingText.textContent = 'Canlı Firebase Bulut Hazır';
+            }
+        }
+
+        function saveToLocal() {
+            localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(appData));
+        }
+
+        function saveSessionState() {
+            localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(sessionState));
+        }
+
+        async function pushToCloud() {
+            appData.updatedAt = Date.now();
+            saveToLocal();
+
+            if (!firebaseDbUrl) {
+                const nowStr = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+                const timeEl = document.getElementById('last-sync-time');
+                if (timeEl) timeEl.textContent = `Kaydedildi: ${nowStr}`;
+                return true;
+            }
+
+            try {
+                updateCloudStatusUI('syncing');
+                const res = await fetch(`${firebaseDbUrl}/medrese_db.json`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(appData)
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                updateCloudStatusUI('ok');
+                return true;
+            } catch (err) {
+                console.warn('Firebase yazma hatası:', err);
+                updateCloudStatusUI('error');
+                return false;
+            }
+        }
+
+        function scheduleAutoSave() {
+            saveToLocal();
+            if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+            saveDebounceTimer = setTimeout(() => {
+                pushToCloud();
+            }, 600);
+        }
+
+        async function pullFromCloud(showNotification = false) {
+            if (!firebaseDbUrl) {
+                if (showNotification) showToast('Henüz bir Firebase linki girilmemiş.', 'warn');
+                return false;
+            }
+
+            try {
+                updateCloudStatusUI('syncing');
+                const res = await fetch(`${firebaseDbUrl}/medrese_db.json?t=${Date.now()}`, {
+                    cache: 'no-store'
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const remoteData = await res.json();
+
+                if (remoteData && Array.isArray(remoteData.students)) {
+                    appData = remoteData;
+                    if (!appData.adminPass) appData.adminPass = '2618654';
+                    saveToLocal();
+                    updateCloudStatusUI('ok');
+                    if (sessionState.loggedIn) {
+                        renderAllPanels();
+                    }
+                    if (showNotification) showToast('☁️ Buluttan en güncel notlar ve veriler çekildi!', 'success');
+                    return true;
+                } else {
+                    // Bulut boşsa mevcut verimizi buluta ilk kez yazalım
+                    await pushToCloud();
+                    if (showNotification) showToast('☁️ Bulut veritabanı hazırlandı ve verileriniz yüklendi!', 'success');
+                    return true;
+                }
+            } catch (err) {
+                console.warn('Firebase okuma hatası:', err);
+                updateCloudStatusUI('error');
+                if (showNotification) showToast('Buluta bağlanılamadı! Linkinizi ve Firebase Rules (.read/.write: true) ayarını kontrol edin.', 'error');
+                return false;
+            }
+        }
+
+        // Olduğun Yerde Sayfa Yenileme (Madde 11: Geri veya ileri gitmeden olduğu yerde günceller)
+        async function refreshInPlace() {
+            const icon = document.getElementById('refresh-icon');
+            if (icon) icon.classList.add('animate-spin');
+
+            if (firebaseDbUrl) {
+                await pullFromCloud(false);
+            } else {
+                const rawLocal = localStorage.getItem(STORAGE_KEY_DATA);
+                if (rawLocal) {
+                    try { appData = JSON.parse(rawLocal); } catch (e) {}
+                }
+            }
+
+            renderAllPanels();
+            setTimeout(() => {
+                if (icon) icon.classList.remove('animate-spin');
+            }, 350);
+            showToast('🔄 Bulunduğunuz yer korunarak veriler güncellendi!', 'success');
+        }
+
+        function openCloudModal() {
+            document.getElementById('firebase-url-input').value = firebaseDbUrl;
+            updateShareableLinkInput();
+            openModal('modal-cloud-settings');
+        }
+
+        async function saveAndTestFirebase() {
+            const rawInput = document.getElementById('firebase-url-input').value;
+            if (!rawInput.trim()) {
+                firebaseDbUrl = '';
+                localStorage.removeItem(STORAGE_KEY_FIREBASE);
+                updateCloudStatusUI();
+                updateShareableLinkInput();
+                showToast('Bulut bağlantısı kaldırıldı. Yerel hafıza kullanılıyor.', 'info');
+                return;
+            }
+
+            const cleaned = normalizeFirebaseUrl(rawInput);
+            if (!cleaned) {
+                showToast('Geçerli bir https://...firebaseio.com veya ...firebasedatabase.app linki girin!', 'error');
+                return;
+            }
+
+            firebaseDbUrl = cleaned;
+            document.getElementById('firebase-url-input').value = firebaseDbUrl;
+            localStorage.setItem(STORAGE_KEY_FIREBASE, firebaseDbUrl);
+            updateShareableLinkInput();
+
+            const ok = await pushToCloud();
+            if (ok) {
+                showToast('✅ Firebase bulut bağlantısı başarıyla kaydedildi ve senkronize edildi!', 'success');
+            } else {
+                showToast('⚠️ Link kaydedildi ancak erişilemedi. Firebase Rules ayarının true olduğundan emin olun.', 'warn');
+            }
+        }
+
+        function updateShareableLinkInput() {
+            const input = document.getElementById('shareable-parent-link');
+            if (!input) return;
+            const baseUrl = window.location.origin + window.location.pathname;
+            if (firebaseDbUrl) {
+                input.value = `${baseUrl}?fb=${encodeURIComponent(firebaseDbUrl)}`;
+            } else {
+                input.value = baseUrl;
+            }
+        }
+
+        function copyShareableParentLink() {
+            const input = document.getElementById('shareable-parent-link');
+            if (!input) return;
+            navigator.clipboard.writeText(input.value).then(() => {
+                showToast('📋 Veli giriş linki kopyalandı! WhatsApp\'tan velilere gönderebilirsiniz.', 'success');
+            });
+        }
+
+        /**************************************************************
+         * 4. YETKİLENDİRME VE OTURUM YÖNETİMİ (Madde 1, 4, 11)
+         **************************************************************/
+        function openAdminLoginModal() {
+            // Eğer zaten yönetici olarak içerideyse direkt bilgi ver
+            if (sessionState.loggedIn && sessionState.role === 'admin') {
+                showToast('Zaten Yönetici (Hoca) modundasınız.', 'info');
+                return;
+            }
+            document.getElementById('admin-pass-input').value = localStorage.getItem('medrese_saved_admin_pass') || '';
+            toggleAdminResetView(false);
+            openModal('modal-admin-login');
+            setTimeout(() => document.getElementById('admin-pass-input').focus(), 100);
+        }
+
+        function toggleAdminResetView(showReset) {
+            const std = document.getElementById('admin-login-standard');
+            const rst = document.getElementById('admin-login-reset');
+            if (showReset) {
+                std.classList.add('hidden');
+                rst.classList.remove('hidden');
+            } else {
+                rst.classList.add('hidden');
+                std.classList.remove('hidden');
+            }
+        }
+
+        function handleAdminLogin() {
+            const entered = document.getElementById('admin-pass-input').value.trim();
+            const currentAdminPass = (appData && appData.adminPass) ? String(appData.adminPass) : '2618654';
+
+            if (entered === currentAdminPass) {
+                localStorage.setItem('medrese_saved_admin_pass', entered);
+                sessionState.loggedIn = true;
+                sessionState.role = 'admin';
+                if (!sessionState.studentId && appData.students.length > 0) {
+                    sessionState.studentId = appData.students[0].id;
+                }
+                saveSessionState();
+                closeModal('modal-admin-login');
+                validateAndEnterSession();
+                showToast('Hoş geldiniz Hocam! Yönetici modu açıldı.', 'success');
+            } else {
+                showToast('Hatalı yönetici şifresi! Unuttuysanız güvenlik kodu ile sıfırlayabilirsiniz.', 'error');
+            }
+        }
+
+        function handleAdminResetPassword() {
+            const secCode = document.getElementById('admin-security-code-input').value.trim().toLowerCase();
+            const newPass = document.getElementById('admin-new-pass-reset').value.trim();
+
+            if (secCode !== SECURITY_CODE) {
+                showToast('Güvenlik kodu hatalı! İpucu: med......', 'error');
+                return;
+            }
+            if (newPass.length < 3) {
+                showToast('Lütfen en az 3 karakterli yeni bir şifre girin.', 'warn');
+                return;
+            }
+
+            appData.adminPass = newPass;
+            pushToCloud();
+
+            localStorage.setItem('medrese_saved_admin_pass', newPass);
+            sessionState.loggedIn = true;
+            sessionState.role = 'admin';
+            if (!sessionState.studentId && appData.students.length > 0) {
+                sessionState.studentId = appData.students[0].id;
+            }
+            saveSessionState();
+            closeModal('modal-admin-login');
+            validateAndEnterSession();
+            showToast('✅ Yönetici şifreniz yenilendi ve giriş yapıldı!', 'success');
+        }
+
+        function openChangeAdminPassModal() {
+            document.getElementById('change-sec-code').value = '';
+            document.getElementById('change-new-pass').value = appData.adminPass || '2618654';
+            openModal('modal-change-admin-pass');
+        }
+
+        function saveNewAdminPassword() {
+            const sec = document.getElementById('change-sec-code').value.trim().toLowerCase();
+            const newP = document.getElementById('change-new-pass').value.trim();
+
+            if (sec !== SECURITY_CODE) {
+                showToast('Güvenlik kodu yanlış! (İpucu: med......)', 'error');
+                return;
+            }
+            if (!newP) {
+                showToast('Yeni şifre boş olamaz!', 'warn');
+                return;
+            }
+            appData.adminPass = newP;
+            pushToCloud();
+            localStorage.setItem('medrese_saved_admin_pass', newP);
+            closeModal('modal-change-admin-pass');
+            showToast('🔑 Yönetici şifresi başarıyla güncellendi!', 'success');
+        }
+
+        function openParentLoginModal() {
+            document.getElementById('parent-pass-input').value = localStorage.getItem('medrese_saved_parent_pass') || '';
+            openModal('modal-parent-login');
+            setTimeout(() => document.getElementById('parent-pass-input').focus(), 100);
+        }
+
+        async function handleParentLogin() {
+            const pass = document.getElementById('parent-pass-input').value.trim();
+            if (!pass) {
+                showToast('Lütfen talebe şifresini giriniz.', 'warn');
+                return;
+            }
+
+            // Bulut bağlıysa giriş anında en güncel şifreleri kontrol et
+            if (firebaseDbUrl) {
+                await pullFromCloud(false);
+            }
+
+            const matchedStudent = appData.students.find(s => String(s.password).trim().toLowerCase() === pass.toLowerCase());
+            if (!matchedStudent) {
+                showToast('Bu şifreye ait bir talebe bulunamadı! Lütfen hocanızdan şifrenizi kontrol ediniz.', 'error');
+                return;
+            }
+
+            localStorage.setItem('medrese_saved_parent_pass', pass);
+            sessionState.loggedIn = true;
+            sessionState.role = 'parent';
+            sessionState.studentId = matchedStudent.id;
+            if (!sessionState.openMonth) sessionState.openMonth = 'Mart';
+            saveSessionState();
+
+            closeModal('modal-parent-login');
+            validateAndEnterSession();
+            showToast(`Hoş geldiniz! ${matchedStudent.name} ders takip ekranı açıldı.`, 'success');
+        }
+
+        function validateAndEnterSession() {
+            if (!appData || !Array.isArray(appData.students)) {
+                appData = createDefaultDatabase();
+            }
+
+            if (sessionState.role === 'parent') {
+                const exists = appData.students.find(s => s.id === sessionState.studentId);
+                if (!exists) {
+                    logoutSession();
+                    return;
+                }
+            } else if (sessionState.role === 'admin') {
+                if (!sessionState.studentId && appData.students.length > 0) {
+                    sessionState.studentId = appData.students[0].id;
+                }
+            }
+
+            document.getElementById('landing-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+
+            // Üst Bar Rol ve Buton Ayarları
+            const isAdmin = sessionState.role === 'admin';
+            const roleBadge = document.getElementById('role-badge');
+            roleBadge.textContent = isAdmin ? '✍️ Yönetici (Hoca) Modu' : '👁️ Veli Okuma Modu';
+            roleBadge.className = `text-xs sm:text-sm px-2.5 py-0.5 rounded-full border-2 border-slate-800 font-bold ${isAdmin ? 'bg-emerald-200' : 'bg-yellow-200'}`;
+
+            document.getElementById('btn-cloud-settings').classList.toggle('hidden', !isAdmin);
+            document.getElementById('btn-admin-pass').classList.toggle('hidden', !isAdmin);
+            document.getElementById('btn-add-student').classList.toggle('hidden', !isAdmin);
+            document.getElementById('student-search-wrapper').classList.toggle('hidden', !isAdmin || appData.students.length < 3);
+            document.getElementById('btn-dev-update').classList.toggle('hidden', !isAdmin); // Geliştirici Kod butonu görünürlüğü
+
+            renderAllPanels();
+        }
+
+        function logoutSession() {
+            sessionState.loggedIn = false;
+            sessionState.role = null;
+            saveSessionState();
+
+            document.getElementById('app-screen').classList.add('hidden');
+            document.getElementById('landing-screen').classList.remove('hidden');
+            showToast('Oturumdan çıkış yapıldı.', 'info');
+        }
+
+        /**************************************************************
+         * 5. SOL PANEL: TALEBE LİSTESİ, EKLEME/SİLME VE İZİN (Madde 2, 3, 4, 9)
+         **************************************************************/
+        function renderAllPanels() {
+            renderStudentList();
+            renderRightWorkspace();
+        }
+
+        function renderStudentList() {
+            const container = document.getElementById('student-list-container');
+            const countLabel = document.getElementById('student-count-label');
+            const isAdmin = sessionState.role === 'admin';
+            const searchVal = (document.getElementById('student-search-input')?.value || '').trim().toLowerCase();
+
+            // Veli sadece kendi oğlunu görür, Yönetici hepsini görür (Madde 1 & 4)
+            let visibleStudents = isAdmin
+                ? appData.students
+                : appData.students.filter(s => s.id === sessionState.studentId);
+
+            if (isAdmin && searchVal) {
+                visibleStudents = visibleStudents.filter(s => s.name.toLowerCase().includes(searchVal));
+            }
+
+            countLabel.textContent = isAdmin
+                ? `Toplam ${appData.students.length} Talebe Kayıtlı`
+                : `Talebe Bilgileri ve İzin İşlemleri`;
+
+            if (visibleStudents.length === 0) {
+                container.innerHTML = `
+                    <div class="sketch-box-alt p-4 text-center bg-white text-slate-600">
+                        <p class="text-base">Talebe bulunamadı.</p>
+                        ${isAdmin ? `<button onclick="openStudentModal()" class="sketch-btn bg-yellow-300 px-4 py-1.5 mt-2 text-sm">➕ İlk Talebeyi Ekle</button>` : ''}
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = visibleStudents.map(stu => {
+                const isSelected = stu.id === sessionState.studentId;
+                const absenceCount = Array.isArray(stu.absences) ? stu.absences.length : 0;
+                const lastAbsence = absenceCount > 0 ? stu.absences[absenceCount - 1] : null;
+
+                return `
+                    <div onclick="selectStudent('${stu.id}')" class="sketch-box p-3 cursor-pointer transition-all ${isSelected ? 'bg-yellow-100 ring-2 ring-slate-900' : 'bg-white hover:bg-amber-50/60'}">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-lg">🎓</span>
+                                    <h4 class="text-lg font-bold text-slate-900 leading-tight">${escapeHtml(stu.name)}</h4>
+                                </div>
+                                <p class="text-xs sm:text-sm text-slate-700 mt-0.5 flex items-center gap-1">
+                                    <span>📞</span> <span>${escapeHtml(stu.phone || 'Numara Yok')}</span>
+                                </p>
+                                ${isAdmin ? `
+                                    <p class="text-xs text-slate-600 mt-0.5">
+                                        🔑 Veli Şifresi: <span class="font-bold bg-white px-1.5 py-0.2 border border-slate-700 rounded">${escapeHtml(stu.password)}</span>
+                                    </p>
+                                ` : ''}
+                            </div>
+
+                            ${isAdmin ? `
+                                <div class="flex items-center gap-1 shrink-0" onclick="event.stopPropagation()">
+                                    <button onclick="openStudentModal('${stu.id}')" class="sketch-btn bg-sky-200 hover:bg-sky-300 px-2 py-1 text-xs" title="Talebeyi Düzenle">✏️</button>
+                                    <button onclick="askDeleteStudent('${stu.id}')" class="sketch-btn bg-rose-200 hover:bg-rose-300 px-2 py-1 text-xs" title="Talebeyi Sil">🗑️</button>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- Madde 9: Numaranın Altında Gelmediği Günü / İzin İşaretleme Butonu -->
+                        <div class="mt-2.5 pt-2 border-t border-dashed border-slate-400 flex flex-col gap-1.5" onclick="event.stopPropagation()">
+                            <button onclick="openAbsenceModal('${stu.id}')" class="sketch-btn w-full py-1 px-2.5 text-xs sm:text-sm ${absenceCount > 0 ? 'bg-amber-200 hover:bg-amber-300' : 'bg-slate-100 hover:bg-slate-200'} text-slate-900 justify-between">
+                                <span>🗓️ Gelmediği Gün / İzin İşaretle</span>
+                                <span class="px-1.5 py-0.2 rounded-full border border-slate-800 bg-white text-xs">${absenceCount} Kayıt</span>
+                            </button>
+                            ${lastAbsence ? `
+                                <div class="text-xs bg-rose-100 border border-slate-700 rounded-lg px-2 py-1 text-slate-800">
+                                    📌 <strong>Son Durum:</strong> ${escapeHtml(lastAbsence.month)} ${lastAbsence.week}.Hafta (${escapeHtml(lastAbsence.day)}) - <em>${escapeHtml(lastAbsence.reason)}</em>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectStudent(studentId) {
+            sessionState.studentId = studentId;
+            saveSessionState();
+            renderStudentList();
+            renderRightWorkspace();
+        }
+
+        function openStudentModal(studentId = null) {
+            if (sessionState.role !== 'admin') return;
+            const titleEl = document.getElementById('student-modal-title');
+            const idInput = document.getElementById('form-student-id');
+            const nameInput = document.getElementById('form-student-name');
+            const phoneInput = document.getElementById('form-student-phone');
+            const passInput = document.getElementById('form-student-pass');
+
+            if (studentId) {
+                const stu = appData.students.find(s => s.id === studentId);
+                if (!stu) return;
+                titleEl.textContent = '✏️ Talebe Bilgilerini Düzenle';
+                idInput.value = stu.id;
+                nameInput.value = stu.name;
+                phoneInput.value = stu.phone || '';
+                passInput.value = stu.password || '';
+            } else {
+                titleEl.textContent = '➕ Yeni Talebe Ekle';
+                idInput.value = '';
+                nameInput.value = '';
+                phoneInput.value = '';
+                passInput.value = Math.floor(1000 + Math.random() * 9000).toString();
+            }
+
+            openModal('modal-student-form');
+            setTimeout(() => nameInput.focus(), 100);
+        }
+
+        function saveStudentForm() {
+            if (sessionState.role !== 'admin') return;
+            const id = document.getElementById('form-student-id').value.trim();
+            const name = document.getElementById('form-student-name').value.trim();
+            const phone = document.getElementById('form-student-phone').value.trim();
+            const password = document.getElementById('form-student-pass').value.trim();
+
+            if (!name) {
+                showToast('Lütfen talebenin adını ve soyadını yazın.', 'warn');
+                return;
+            }
+            if (!password) {
+                showToast('Veli girişi için talebeye özel bir şifre belirleyin.', 'warn');
+                return;
+            }
+
+            // Başka bir talebeyle aynı şifre mi kontrol et (Veli karıştırmasın)
+            const duplicatePass = appData.students.find(s => s.id !== id && String(s.password).toLowerCase() === password.toLowerCase());
+            if (duplicatePass) {
+                showToast(`Bu şifre (${password}) zaten "${duplicatePass.name}" için kullanılıyor! Lütfen farklı bir şifre verin.`, 'error');
+                return;
+            }
+
+            if (id) {
+                const stu = appData.students.find(s => s.id === id);
+                if (stu) {
+                    stu.name = name;
+                    stu.phone = phone;
+                    stu.password = password;
+                }
+                showToast(`✅ ${name} bilgileri güncellendi.`, 'success');
+            } else {
+                const newStu = {
+                    id: 'stu_' + Date.now(),
+                    name,
+                    phone,
+                    password,
+                    absences: [],
+                    records: {}
+                };
+                appData.students.push(newStu);
+                sessionState.studentId = newStu.id;
+                saveSessionState();
+                showToast(`✅ ${name} listeye eklendi!`, 'success');
+            }
+
+            pushToCloud();
+            closeModal('modal-student-form');
+            renderAllPanels();
+        }
+
+        function askDeleteStudent(studentId) {
+            if (sessionState.role !== 'admin') return;
+            const stu = appData.students.find(s => s.id === studentId);
+            if (!stu) return;
+            pendingDeleteStudentId = studentId;
+            document.getElementById('delete-student-desc').textContent = `"${stu.name}" isimli talebe ve tüm ders/ezber notları silinecektir.`;
+            document.getElementById('confirm-delete-btn').onclick = confirmDeleteStudent;
+            openModal('modal-delete-confirm');
+        }
+
+        function confirmDeleteStudent() {
+            if (!pendingDeleteStudentId) return;
+            appData.students = appData.students.filter(s => s.id !== pendingDeleteStudentId);
+            if (sessionState.studentId === pendingDeleteStudentId) {
+                sessionState.studentId = appData.students[0]?.id || null;
+                saveSessionState();
+            }
+            pendingDeleteStudentId = null;
+            pushToCloud();
+            closeModal('modal-delete-confirm');
+            renderAllPanels();
+            showToast('🗑️ Talebe kaydı silindi.', 'info');
+        }
+
+        /**************************************************************
+         * 6. İZİN VE DEVAMSIZLIK İŞLEMLERİ (Madde 9)
+         **************************************************************/
+        let activeAbsenceStudentId = null;
+
+        function populateAbsenceMonths() {
+            const sel = document.getElementById('absence-month');
+            if (!sel) return;
+            sel.innerHTML = MONTHS.map(m => `<option value="${m}">${m}</option>`).join('');
+        }
+
+        function openAbsenceModal(studentId) {
+            activeAbsenceStudentId = studentId;
+            const stu = appData.students.find(s => s.id === studentId);
+            if (!stu) return;
+
+            document.getElementById('absence-student-subtitle').textContent = `${stu.name} için gelmediği veya izinli olduğu günü aşağıdan işaretleyebilirsiniz.`;
+            document.getElementById('absence-month').value = sessionState.openMonth || 'Mart';
+            document.getElementById('absence-week').value = String(sessionState.selectedWeek || 1);
+            document.getElementById('absence-reason').value = '';
+
+            renderAbsenceHistoryList();
+            openModal('modal-absence');
+        }
+
+        function renderAbsenceHistoryList() {
+            const stu = appData.students.find(s => s.id === activeAbsenceStudentId);
+            const listEl = document.getElementById('absence-history-list');
+            if (!stu || !listEl) return;
+
+            if (!Array.isArray(stu.absences) || stu.absences.length === 0) {
+                listEl.innerHTML = `<div class="p-3 text-center text-sm text-slate-500 border border-dashed border-slate-400 rounded-xl">Henüz işaretlenmiş bir izin veya devamsızlık günü yok. Elhamdülillah tam devam!</div>`;
+                return;
+            }
+
+            listEl.innerHTML = stu.absences.slice().reverse().map(item => `
+                <div class="sketch-box-alt p-2.5 bg-rose-50 flex items-center justify-between gap-2">
+                    <div>
+                        <span class="font-bold text-sm text-slate-900">📌 ${escapeHtml(item.month)} - ${item.week}. Hafta (${escapeHtml(item.day)})</span>
+                        <p class="text-xs text-slate-700">${escapeHtml(item.reason || 'İzinli / Gelmedi')}</p>
+                    </div>
+                    <button onclick="removeAbsenceRecord('${item.id}')" class="sketch-btn bg-white hover:bg-rose-200 px-2 py-0.5 text-xs shrink-0">Kaldır</button>
+                </div>
+            `).join('');
+        }
+
+        function addAbsenceRecord() {
+            const stu = appData.students.find(s => s.id === activeAbsenceStudentId);
+            if (!stu) return;
+
+            const month = document.getElementById('absence-month').value;
+            const week = Number(document.getElementById('absence-week').value);
+            const day = document.getElementById('absence-day').value;
+            const reason = document.getElementById('absence-reason').value.trim() || 'İzinli / Gelemeyecek';
+
+            if (!Array.isArray(stu.absences)) stu.absences = [];
+            stu.absences.push({
+                id: 'abs_' + Date.now(),
+                month,
+                week,
+                day,
+                reason
+            });
+
+            document.getElementById('absence-reason').value = '';
+            pushToCloud();
+            renderAbsenceHistoryList();
+            renderAllPanels();
+            showToast('📌 İzin / gelmediği gün kaydedildi ve buluta işlendi!', 'success');
+        }
+
+        function removeAbsenceRecord(absId) {
+            const stu = appData.students.find(s => s.id === activeAbsenceStudentId);
+            if (!stu || !Array.isArray(stu.absences)) return;
+            stu.absences = stu.absences.filter(a => a.id !== absId);
+            pushToCloud();
+            renderAbsenceHistoryList();
+            renderAllPanels();
+            showToast('İzin kaydı kaldırıldı.', 'info');
+        }
+
+        /**************************************************************
+         * 7. SAĞ PANEL: AYLAR, 4 HAFTA, GÜNLER VE KUTULAR (Madde 5)
+         **************************************************************/
+        function getDayRecord(stu, month, week, day) {
+            if (!stu.records) stu.records = {};
+            if (!stu.records[month]) stu.records[month] = {};
+            if (!stu.records[month][week]) stu.records[month][week] = {};
+            if (!stu.records[month][week][day]) {
+                stu.records[month][week][day] = {
+                    kuranPlace: '',
+                    kuranScore: '',
+                    kuranNote: '',
+                    kuranYarinPlace: '',
+                    kuranYarinTekrar: '',
+                    ezberPlace: '',
+                    ezberScore: '',
+                    ezberNote: '',
+                    ezberYarinPlace: '',
+                    ezberYarinTekrar: ''
+                };
+            }
+            
+            // Eski kayıtlara yeni alanları ekle (Geriye dönük uyumluluk)
+            const rec = stu.records[month][week][day];
+            if (rec.kuranYarinPlace === undefined) rec.kuranYarinPlace = '';
+            if (rec.kuranYarinTekrar === undefined) rec.kuranYarinTekrar = '';
+            if (rec.ezberYarinPlace === undefined) rec.ezberYarinPlace = '';
+            if (rec.ezberYarinTekrar === undefined) rec.ezberYarinTekrar = '';
+            
+            return rec;
+        }
+
+        function toggleMonthAccordion(monthName) {
+            // Aynı aya tekrar tıklanırsa kapatıp gizler, başka aya tıklanırsa onu açar (Madde 5)
+            if (sessionState.openMonth === monthName) {
+                sessionState.openMonth = null;
+            } else {
+                sessionState.openMonth = monthName;
+                if (!sessionState.selectedWeek) sessionState.selectedWeek = 1;
+            }
+            saveSessionState();
+            renderRightWorkspace();
+        }
+
+        function selectWeekTab(weekNum) {
+            sessionState.selectedWeek = weekNum;
+            saveSessionState();
+            renderRightWorkspace();
+        }
+
+        function handleNoteInput(studentId, month, week, day, field, value) {
+            if (sessionState.role !== 'admin') return;
+            const stu = appData.students.find(s => s.id === studentId);
+            if (!stu) return;
+
+            // Puan kutuları 0-100 arası sınırlandırılsın
+            if (field === 'kuranScore' || field === 'ezberScore') {
+                if (value !== '') {
+                    let num = Number(value);
+                    if (isNaN(num)) num = 0;
+                    if (num > 100) num = 100;
+                    if (num < 0) num = 0;
+                    value = String(num);
+                }
+            }
+
+            const rec = getDayRecord(stu, month, week, day);
+            rec[field] = value;
+
+            // Otomatik yerel + Firebase bulut kayıt
+            scheduleAutoSave();
+
+            // Cuma analiz ve 3D grafik bölümünü canlı güncelle
+            updateWeeklyAnalysisSection(stu, month, week);
+        }
+
+        function renderRightWorkspace() {
+            const mainEl = document.getElementById('right-workspace-panel');
+            const isAdmin = sessionState.role === 'admin';
+            const stu = appData.students.find(s => s.id === sessionState.studentId);
+
+            if (!stu) {
+                mainEl.innerHTML = `
+                    <div class="sketch-box p-8 text-center bg-white">
+                        <div class="text-5xl mb-3">📖</div>
+                        <h3 class="text-2xl font-bold mb-1">Henüz Seçili Talebe Yok</h3>
+                        <p class="text-slate-600">Sol taraftaki listeden bir talebe seçin veya yeni talebe ekleyin.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const activeMonth = sessionState.openMonth;
+            const activeWeek = sessionState.selectedWeek || 1;
+
+            // 1. Talebe Üst Özet Kartı
+            let html = `
+                <div class="sketch-box p-4 sm:p-5 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-2xl">🕌</span>
+                            <h2 class="text-2xl sm:text-3xl font-bold text-slate-900">${escapeHtml(stu.name)}</h2>
+                            <span class="text-xs sm:text-sm px-2.5 py-0.5 rounded-full border border-slate-800 bg-yellow-100">
+                                📞 ${escapeHtml(stu.phone || 'Numara Kayıtlı Değil')}
+                            </span>
+                        </div>
+                        <p class="text-sm text-slate-600 mt-1">
+                            ${isAdmin 
+                                ? '✍️ Notları ve puanları (100 üzerinden) yazdığınız anda otomatik olarak kaydedilir ve buluta gönderilir.' 
+                                : '👁️ Veli Bilgilendirme Ekranı: Notları inceleyebilir, sol menüden izin/gelmeme durumu bildirebilirsiniz.'}
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button onclick="openAbsenceModal('${stu.id}')" class="sketch-btn bg-amber-200 hover:bg-amber-300 px-3 py-1.5 text-sm">
+                            🗓️ İzin / Yoklama (${(stu.absences || []).length})
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // 2. AYLAR SEKMELERİ (Madde 5: Tıklayınca açılır, tekrar tıklayınca kaybolur/kapanır)
+            html += `
+                <div class="sketch-box p-4 sm:p-5 bg-white">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-lg sm:text-xl font-bold flex items-center gap-2">
+                            <span>📅 Aylar</span>
+                            <span class="text-xs sm:text-sm font-normal text-slate-600">(Aya tıkladığınızda haftalar açılır, tekrar tıklarsanız kapanır)</span>
+                        </h3>
+                        ${activeMonth ? `
+                            <button onclick="toggleMonthAccordion('${activeMonth}')" class="sketch-btn bg-slate-100 hover:bg-slate-200 px-2.5 py-0.5 text-xs">
+                                🔼 ${activeMonth} Ayını Gizle
+                            </button>
+                        ` : ''}
+                    </div>
+
+                    <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2.5">
+                        ${MONTHS.map(m => {
+                            const isOpen = activeMonth === m;
+                            const hasData = stu.records && stu.records[m] && Object.keys(stu.records[m]).length > 0;
+                            return `
+                                <button onclick="toggleMonthAccordion('${m}')" class="sketch-btn py-2 px-3 text-base justify-between ${isOpen ? 'bg-yellow-300 ring-2 ring-slate-900' : (hasData ? 'bg-emerald-100 hover:bg-emerald-200' : 'bg-slate-50 hover:bg-slate-100')}">
+                                    <span>${m}</span>
+                                    <span class="text-xs">${isOpen ? '📂' : (hasData ? '📝' : '📁')}</span>
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+
+            // Eğer ay kapatılmışsa bilgilendirme göster
+            if (!activeMonth) {
+                html += `
+                    <div class="sketch-box-alt p-8 text-center bg-white/80">
+                        <p class="text-xl font-bold text-slate-700">👆 Haftaları ve ders notlarını görmek için yukarıdan bir aya tıklayın.</p>
+                    </div>
+                `;
+                mainEl.innerHTML = html;
+                return;
+            }
+
+            // 3. SEÇİLİ AYIN 4 HAFTASI VE GÜNLÜK DERS ÇİZELGESİ
+            html += `
+                <div class="sketch-box p-4 sm:p-6 bg-white space-y-5 animate-pop">
+                    <!-- 4 Hafta Seçim Butonları -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-dashed border-slate-300 pb-4">
+                        <div>
+                            <h3 class="text-2xl font-bold text-slate-900">📂 ${activeMonth} Ayı Ders Çizelgesi</h3>
+                            <p class="text-sm text-slate-600">Haftayı seçerek Pazartesi'den Cuma'ya ders ve ezber notlarını görüntüleyin.</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            ${WEEKS.map(w => {
+                                const isWSelected = activeWeek === w;
+                                return `
+                                    <button onclick="selectWeekTab(${w})" class="sketch-btn px-4 py-2 text-base ${isWSelected ? 'bg-sky-300 ring-2 ring-slate-900' : 'bg-slate-100 hover:bg-slate-200'}">
+                                        📌 ${w}. Hafta
+                                    </button>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Pazartesi'den Cuma'ya Günler Alt Alta Sıralı -->
+                    <div class="space-y-5">
+                        ${DAYS.map((dayName, idx) => {
+                            const rec = getDayRecord(stu, activeMonth, activeWeek, dayName);
+                            const dayAbsence = (stu.absences || []).find(a => a.month === activeMonth && Number(a.week) === Number(activeWeek) && (a.day === dayName || a.day === 'Tüm Hafta İzinli'));
+                            const badgeColors = ['bg-sky-200', 'bg-emerald-200', 'bg-amber-200', 'bg-purple-200', 'bg-yellow-300'];
+
+                            return `
+                                <div class="sketch-box-alt p-4 sm:p-5 ${dayAbsence ? 'bg-rose-50/70' : 'bg-[#fffef9]'}">
+                                    <!-- Gün Başlığı ve Veliye Bugünkü Ödevi At Butonu (Madde 7) -->
+                                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2 border-b-2 border-slate-800">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="px-3 py-0.5 rounded-full border-2 border-slate-800 font-bold text-base sm:text-lg ${badgeColors[idx]}">
+                                                ${idx + 1}. Gün: ${dayName}
+                                            </span>
+                                            <span class="text-xs sm:text-sm text-slate-600">(${activeMonth} - ${activeWeek}. Hafta)</span>
+                                            ${dayAbsence ? `
+                                                <span class="px-2.5 py-0.5 rounded-full border border-slate-800 bg-rose-200 text-xs font-bold">
+                                                    🚩 İzinli / Gelmedi: ${escapeHtml(dayAbsence.reason)}
+                                                </span>
+                                            ` : ''}
+                                        </div>
+
+                                        ${isAdmin ? `
+                                            <button onclick="sendDailyHomeworkWhatsApp('${stu.id}', '${activeMonth}', ${activeWeek}, '${dayName}')" class="sketch-btn bg-emerald-300 hover:bg-emerald-400 text-slate-900 px-3.5 py-1 text-sm">
+                                                <span>📲 Bugünkü Ödevi Veliye At (WhatsApp)</span>
+                                            </button>
+                                        ` : ''}
+                                    </div>
+
+                                    <!-- 1. Satır: KUR'AN-I KERİM DERS NOTU, PUANI VE HOCA NOTU KUTULARI -->
+                                    <div class="mb-4">
+                                        <div class="text-sm font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
+                                            <span>📖 Kur'an-ı Kerim Dersi</span>
+                                            <span class="text-xs font-normal text-slate-500">(Bugünkü Durum ve Yarınki Ödev)</span>
+                                        </div>
+                                        
+                                        <!-- Bugünkü Durum -->
+                                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-2.5">
+                                            <div class="md:col-span-4">
+                                                <label class="block text-xs text-slate-600 mb-0.5">Bugünkü Ders / Sayfa:</label>
+                                                <input type="text" 
+                                                    value="${escapeHtml(rec.kuranPlace)}" 
+                                                    ${isAdmin ? '' : 'readonly'}
+                                                    placeholder=""
+                                                    oninput="handleNoteInput('${stu.id}', '${activeMonth}', ${activeWeek}, '${dayName}', 'kuranPlace', this.value)"
+                                                    class="sketch-input">
+                                            </div>
+                                            <div class="md:col-span-2">
+                                                <label class="block text-xs text-slate-600 mb-0.5">Ders Puanı (0-100):</label>
+                                                <input type="number" min="0" max="100"
+                                                    value="${escapeHtml(rec.kuranScore)}" 
+                                                    ${isAdmin ? '' : 'readonly'}
+                                                    placeholder=""
+                                                    oninput="handleNoteInput('${stu.id}', '${activeMonth}', ${activeWeek}, '${dayName}', 'kuranScore', this.value)"
+                                                    class="sketch-input font-bold text-center">
+                                            </div>
+                                            <div class="md:col-span-6">
+                                                <label class="block text-xs text-slate-600 mb-0.5">Kur'an Hoca Notu / Değerlendirme:</label>
+                                                <input type="text" 
+                                                    value="${escapeHtml(rec.kuranNote)}" 
+                                                    ${isAdmin ? '' : 'readonly'}
+                                                    placeholder=""
+                                                    oninput="handleNoteInput('${stu.id}', '${activeMonth}', ${activeWeek}, '${dayName}', 'kuranNote', this.value)"
+                                                    class="sketch-input">
+                                            </div>
+                                        </div>
+
+                                        <!-- Yarınki Ödev -->
+                                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 bg-sky-50/60 p-2.5 rounded-2xl border border-sky-200/60">
+                                            <div class="md:col-span-8">
+                                                <label class="block text-xs text-sky-800 font-bold mb-0.5">Yarınki Kur'an Ödevi (Ders Yeri):</label>
+                                                <input type="text" 
+                                                    value="${escapeHtml(rec.kuranYarinPlace)}" 
+                                                    ${isAdmin ? '' : 'readonly'}
+                                                    placeholder=""
+                                                    oninput="handleNoteInput('${stu.id}', '${activeMonth}', ${activeWeek}, '${dayName}', 'kuranYarinPlace', this.value)"
+                                                    class="sketch-input border-sky-300">
+                                            </div>
+                                            <div class="md:col-span-4">
+                                                <label class="block text-xs text-sky-800 font-bold mb-0.5">Kaç Defa Okunacak (Tekrar):</label>
+                                                <input type="text" 
+                                                    value="${escapeHtml(rec.kuranYarinTekrar)}" 
+                                                    ${isAdmin ? '' : 'readonly'}
+                                                    placeholder=""
+                                                    oninput="handleNoteInput('${stu.id}', '${activeMonth}', ${activeWeek}, '${dayName}', 'kuranYarinTekrar', this.value)"
+                                                    class="sketch-input border-sky-300 font-bold">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 2. Satır: ALTINA EZBER YERİ, EZBER PUANI VE EZBER NOTU AYRI KUTULAR -->
+                                    <div class="pt-3 border-t border-dashed border-slate-300">
+                                        <div class="text-sm font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
+                                            <span>🧠 Ezber Dersi</span>
+                                            <span class="text-xs font-normal text-slate-500">(Bugünkü Durum ve Yarınki Ödev)</span>
+                                        </div>
+                                        
+                                        <!-- Bugünkü Durum -->
+                                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-2.5">
+                                            <div class="md:col-span-4">
+                                                <label class="block text-xs text-slate-600 mb-0.5">Bugünkü Ezber Yeri / Sure:</label>
+                                                <input type="text" 
+                                                    value="${escapeHtml(rec.ezberPlace)}" 
+                                                    ${isAdmin ? '' : 'readonly'}
+                                                    placeholder=""
+                                                    oninput="handleNoteInput('${stu.id}', '${activeMonth}', ${activeWeek}, '${dayName}', 'ezberPlace', this.value)"
+                                                    class="sketch-input">
+                                            </div>
+                                            <div class="md:col-span-2">
+                                                <label class="block text-xs text-slate-600 mb-0.5">Ezber Puanı (0-100):</label>
+                                                <input type="number" min="0" max="100"
+                                                    value="${escapeHtml(rec.ezberScore)}" 
+                                                    ${isAdmin ? '' : 'readonly'}
+                                                    placeholder=""
+                                                    oninput="handleNoteInput('${stu.id}', '${activeMonth}', ${activeWeek}, '${dayName}', 'ezberScore', this.value)"
+                                                    class="sketch-input font-bold text-center">
+                                            </div>
+                                            <div class="md:col-span-6">
+                                                <label class="block text-xs text-slate-600 mb-0.5">Ezber Hoca Notu:</label>
+                                                <input type="text" 
+                                                    value="${escapeHtml(rec.ezberNote)}" 
+                                                    ${isAdmin ? '' : 'readonly'}
+                                                    placeholder=""
+                                                    oninput="handleNoteInput('${stu.id}', '${activeMonth}', ${activeWeek}, '${dayName}', 'ezberNote', this.value)"
+                                                    class="sketch-input">
+                                            </div>
+                                        </div>
+
+                                        <!-- Yarınki Ödev -->
+                                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 bg-emerald-50/60 p-2.5 rounded-2xl border border-emerald-200/60">
+                                            <div class="md:col-span-8">
+                                                <label class="block text-xs text-emerald-800 font-bold mb-0.5">Yarınki Ezber Ödevi (Sure/Ayet):</label>
+                                                <input type="text" 
+                                                    value="${escapeHtml(rec.ezberYarinPlace)}" 
+                                                    ${isAdmin ? '' : 'readonly'}
+                                                    placeholder=""
+                                                    oninput="handleNoteInput('${stu.id}', '${activeMonth}', ${activeWeek}, '${dayName}', 'ezberYarinPlace', this.value)"
+                                                    class="sketch-input border-emerald-300">
+                                            </div>
+                                            <div class="md:col-span-4">
+                                                <label class="block text-xs text-emerald-800 font-bold mb-0.5">Kaç Defa Okunacak (Tekrar):</label>
+                                                <input type="text" 
+                                                    value="${escapeHtml(rec.ezberYarinTekrar)}" 
+                                                    ${isAdmin ? '' : 'readonly'}
+                                                    placeholder=""
+                                                    oninput="handleNoteInput('${stu.id}', '${activeMonth}', ${activeWeek}, '${dayName}', 'ezberYarinTekrar', this.value)"
+                                                    class="sketch-input border-emerald-300 font-bold">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <!-- 4. CUMA SONU 3D GRAFİK VE AKILLI HARF/EKSİK ANALİZ BÖLÜMÜ (Madde 6 ve 7) -->
+                <div id="weekly-analysis-card" class="sketch-box p-4 sm:p-6 bg-white space-y-4">
+                    <!-- JS ile updateWeeklyAnalysisSection tarafından doldurulur -->
+                </div>
+            `;
+
+            mainEl.innerHTML = html;
+            updateWeeklyAnalysisSection(stu, activeMonth, activeWeek);
+        }
+
+        /**************************************************************
+         * 8. CUMA SONU 3D GRAFİK VE AKILLI HARF/NOT ANALİZ MOTORU (Madde 6)
+         **************************************************************/
+        function computeWeeklyAnalysis(stu, month, week) {
+            const dailyStats = [];
+            let kuranTotal = 0, kuranCount = 0;
+            let ezberTotal = 0, ezberCount = 0;
+
+            // Harf / Konu Tekrar Sayacı
+            const issueTracker = {};
+            const allNotesList = [];
+
+            DAYS.forEach(day => {
+                const rec = getDayRecord(stu, month, week, day);
+                const kScore = rec.kuranScore !== '' && !isNaN(Number(rec.kuranScore)) ? Number(rec.kuranScore) : null;
+                const eScore = rec.ezberScore !== '' && !isNaN(Number(rec.ezberScore)) ? Number(rec.ezberScore) : null;
+
+                if (kScore !== null) { kuranTotal += kScore; kuranCount++; }
+                if (eScore !== null) { ezberTotal += eScore; ezberCount++; }
+
+                const combinedNote = `${rec.kuranNote || ''} ${rec.ezberNote || ''}`.trim();
+                if (combinedNote) {
+                    allNotesList.push({ day, note: combinedNote });
+                }
+
+                // Harf ve Tecvid Eksiklerini Tara
+                const lowerNote = combinedNote.toLocaleLowerCase('tr-TR');
+                ARABIC_LETTER_KEYWORDS.forEach(item => {
+                    if (lowerNote.includes(item.key)) {
+                        if (!issueTracker[item.label]) {
+                            issueTracker[item.label] = { count: 0, days: [] };
+                        }
+                        if (!issueTracker[item.label].days.includes(day)) {
+                            issueTracker[item.label].count++;
+                            issueTracker[item.label].days.push(day);
+                        }
+                    }
+                });
+
+                dailyStats.push({
+                    day,
+                    kScore: kScore ?? 0,
+                    eScore: eScore ?? 0,
+                    hasKScore: kScore !== null,
+                    hasEScore: eScore !== null,
+                    kuranPlace: rec.kuranPlace,
+                    kuranYarinPlace: rec.kuranYarinPlace,
+                    kuranYarinTekrar: rec.kuranYarinTekrar,
+                    ezberPlace: rec.ezberPlace,
+                    ezberYarinPlace: rec.ezberYarinPlace,
+                    ezberYarinTekrar: rec.ezberYarinTekrar,
+                    kuranNote: rec.kuranNote,
+                    ezberNote: rec.ezberNote
+                });
+            });
+
+            const kuranAvg = kuranCount > 0 ? Math.round(kuranTotal / kuranCount) : 0;
+            const ezberAvg = ezberCount > 0 ? Math.round(ezberTotal / ezberCount) : 0;
+            const generalAvg = (kuranCount + ezberCount) > 0
+                ? Math.round((kuranTotal + ezberTotal) / (kuranCount + ezberCount))
+                : 0;
+
+            // Tekrarlayan veya Tek Günlük Uyarıları Raporla
+            const repeatedWarnings = [];
+            const singleWarnings = [];
+
+            Object.keys(issueTracker).forEach(label => {
+                const info = issueTracker[label];
+                if (info.count >= 2) {
+                    repeatedWarnings.push(
+                        `⚠️ <strong>${label}</strong> konusunda <strong>${info.days.join(' ve ')}</strong> günleri (${info.count} gün üst üste/tekrarlı) uyarı yazılmış ancak tam düzelmediği görülmüştür. Talebemiz <strong>${label}</strong> mahrecinde/kuralında eksiktir; evde bu harfe/kurala özel pratik yapılmasına özen gösterelim.`
+                    );
+                } else if (info.count === 1) {
+                    singleWarnings.push(
+                        `📌 <strong>${info.days[0]}</strong> günü <strong>${label}</strong> üzerine hoca notu düşülmüştür, tekrarlarda dikkat edelim.`
+                    );
+                }
+            });
+
+            // Genel Başarı Yorumu
+            let performanceSummary = '';
+            if (kuranCount === 0 && ezberCount === 0) {
+                performanceSummary = 'Bu hafta için henüz puan girişi yapılmamıştır.';
+            } else if (generalAvg >= 85) {
+                performanceSummary = `🌟 Maşallah! Talebemiz bu haftayı ${generalAvg}/100 genel ortalamayla çok başarılı tamamlamıştır.`;
+            } else if (generalAvg >= 70) {
+                performanceSummary = `👍 Talebemizin haftalık genel ortalaması ${generalAvg}/100. Gayreti güzel, belirtilen eksiklerle daha da iyi olacaktır.`;
+            } else {
+                performanceSummary = `📖 Talebemizin haftalık genel ortalaması ${generalAvg}/100. Günlük ders ve ezber tekrarlarını artırmamız gerekiyor.`;
+            }
+
+            // Bu haftaki izin/devamsızlıklar
+            const weekAbsences = (stu.absences || []).filter(a => a.month === month && Number(a.week) === Number(week));
+
+            return {
+                dailyStats,
+                kuranAvg,
+                ezberAvg,
+                generalAvg,
+                repeatedWarnings,
+                singleWarnings,
+                performanceSummary,
+                weekAbsences,
+                allNotesList
+            };
+        }
+
+        function updateWeeklyAnalysisSection(stu, month, week) {
+            const card = document.getElementById('weekly-analysis-card');
+            if (!card) return;
+
+            const isAdmin = sessionState.role === 'admin';
+            const analysis = computeWeeklyAnalysis(stu, month, week);
+
+            card.innerHTML = `
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b-2 border-slate-800 pb-3">
+                    <div>
+                        <h3 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                            <span>📊 Cuma Sonu Haftalık 3D Grafik ve Akıllı Analiz Raporu</span>
+                        </h3>
+                        <p class="text-sm text-slate-600">${escapeHtml(stu.name)} • ${month} Ayı ${week}. Hafta (Pazartesi - Cuma Komple Değerlendirme)</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="updateWeeklyAnalysisSectionById('${stu.id}', '${month}', ${week}, true)" class="sketch-btn bg-sky-200 hover:bg-sky-300 px-3.5 py-1.5 text-sm">
+                            🔍 Şimdi Analiz Et
+                        </button>
+                        ${isAdmin ? `
+                            <button onclick="sendWeeklyAnalysisWhatsApp('${stu.id}', '${month}', ${week})" class="sketch-btn bg-yellow-300 hover:bg-yellow-400 text-slate-900 px-4 py-1.5 text-sm sm:text-base">
+                                📤 Cuma Haftalık Analizi Veliye At (WhatsApp)
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <!-- Puan Ortalamaları Özet Kutuları -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="sketch-box-alt p-3.5 bg-sky-50 text-center">
+                        <p class="text-xs sm:text-sm text-slate-600 font-bold">📖 Kur'an-ı Kerim Haftalık Ort.</p>
+                        <p class="text-3xl font-bold text-slate-900 mt-1">${analysis.kuranAvg} <span class="text-base font-normal">/ 100</span></p>
+                    </div>
+                    <div class="sketch-box-alt p-3.5 bg-emerald-50 text-center">
+                        <p class="text-xs sm:text-sm text-slate-600 font-bold">🧠 Ezber Dersi Haftalık Ort.</p>
+                        <p class="text-3xl font-bold text-slate-900 mt-1">${analysis.ezberAvg} <span class="text-base font-normal">/ 100</span></p>
+                    </div>
+                    <div class="sketch-box-alt p-3.5 bg-yellow-100 text-center">
+                        <p class="text-xs sm:text-sm text-slate-600 font-bold">🏆 Haftalık Genel Başarı Puanı</p>
+                        <p class="text-3xl font-bold text-slate-900 mt-1">${analysis.generalAvg} <span class="text-base font-normal">/ 100</span></p>
+                    </div>
+                </div>
+
+                <!-- 3D Kalem Çizimi Sütun Grafik (HTML5 Canvas) -->
+                <div class="sketch-box-alt p-3 sm:p-4 bg-[#fffef9]">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <h4 class="font-bold text-base">📐 Pazartesi - Cuma 3D Puan Grafiği</h4>
+                        <div class="flex items-center gap-4 text-xs sm:text-sm font-bold">
+                            <span class="inline-flex items-center gap-1.5"><span class="w-3.5 h-3.5 inline-block bg-sky-400 border border-slate-900"></span> Kur'an Puanı</span>
+                            <span class="inline-flex items-center gap-1.5"><span class="w-3.5 h-3.5 inline-block bg-emerald-400 border border-slate-900"></span> Ezber Puanı</span>
+                        </div>
+                    </div>
+                    <div class="w-full overflow-x-auto">
+                        <canvas id="weekly-3d-chart" width="760" height="290" class="w-full max-w-[760px] mx-auto block"></canvas>
+                    </div>
+                </div>
+
+                <!-- Detaylı Harf, Tecvid ve Hoca Notu Analiz Kutusu -->
+                <div class="sketch-box-alt p-4 bg-amber-50/80 space-y-2.5">
+                    <h4 class="text-lg font-bold text-slate-900 flex items-center gap-1.5">
+                        <span>📝 Detaylı Hoca Notu ve Harf/Eksik Analizi:</span>
+                    </h4>
+                    <p class="text-base font-bold text-slate-800">${analysis.performanceSummary}</p>
+
+                    ${analysis.repeatedWarnings.length > 0 ? `
+                        <div class="space-y-2 mt-2">
+                            ${analysis.repeatedWarnings.map(w => `
+                                <div class="p-3 rounded-xl bg-rose-100 border-2 border-slate-800 text-slate-900 text-sm sm:text-base">
+                                    ${w}
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+
+                    ${analysis.singleWarnings.length > 0 ? `
+                        <div class="space-y-1.5 mt-2">
+                            ${analysis.singleWarnings.map(w => `
+                                <div class="p-2.5 rounded-xl bg-white border border-slate-700 text-slate-800 text-sm">
+                                    ${w}
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+
+                    ${analysis.repeatedWarnings.length === 0 && analysis.singleWarnings.length === 0 && analysis.allNotesList.length > 0 ? `
+                        <div class="p-2.5 rounded-xl bg-emerald-100 border border-slate-800 text-slate-900 text-sm">
+                            ✅ Bu hafta üst üste tekrar eden kritik bir harf veya mahreç eksikliği tespit edilmedi.
+                        </div>
+                    ` : ''}
+
+                    ${analysis.weekAbsences.length > 0 ? `
+                        <div class="p-2.5 rounded-xl bg-amber-100 border border-slate-800 text-slate-900 text-sm">
+                            🗓️ <strong>Bu Haftaki İzin / Devamsızlık Durumu:</strong> 
+                            ${analysis.weekAbsences.map(a => `${escapeHtml(a.day)} (${escapeHtml(a.reason)})`).join(', ')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            setTimeout(() => draw3DWeeklyChart('weekly-3d-chart', analysis.dailyStats), 20);
+        }
+
+        function updateWeeklyAnalysisSectionById(studentId, month, week, notify = false) {
+            const stu = appData.students.find(s => s.id === studentId);
+            if (!stu) return;
+            updateWeeklyAnalysisSection(stu, month, week);
+            if (notify) {
+                showToast('📊 Pazartesi\'den Cuma\'ya tüm notlar ve 3D grafik analiz edildi!', 'success');
+            }
+        }
+
+        // Kalem Çizimi Görünümlü 3D Sütun Grafik Çizimi (Canvas)
+        function draw3DWeeklyChart(canvasId, dailyStats) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width;
+            const H = canvas.height;
+
+            ctx.clearRect(0, 0, W, H);
+            ctx.font = "bold 15px 'Patrick Hand', cursive, sans-serif";
+
+            const chartLeft = 60;
+            const chartRight = W - 35;
+            const chartTop = 35;
+            const chartBottom = H - 45;
+            const chartHeight = chartBottom - chartTop;
+            const depthX = 12;
+            const depthY = -10;
+
+            // Arka Plan Kılavuz Çizgileri (0, 25, 50, 75, 100)
+            [0, 25, 50, 75, 100].forEach(val => {
+                const y = chartBottom - (val / 100) * chartHeight;
+                ctx.beginPath();
+                ctx.strokeStyle = val === 0 ? '#1e293b' : '#cbd5e1';
+                ctx.lineWidth = val === 0 ? 2.5 : 1;
+                if (val > 0) ctx.setLineDash([5, 5]);
+                else ctx.setLineDash([]);
+                ctx.moveTo(chartLeft, y);
+                ctx.lineTo(chartRight, y);
+                ctx.stroke();
+
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#334155';
+                ctx.textAlign = 'right';
+                ctx.fillText(String(val), chartLeft - 10, y + 5);
+            });
+
+            // 3D Taban Platformu
+            ctx.beginPath();
+            ctx.fillStyle = '#f1f5f9';
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 2;
+            ctx.moveTo(chartLeft, chartBottom);
+            ctx.lineTo(chartLeft + depthX, chartBottom + depthY);
+            ctx.lineTo(chartRight + depthX, chartBottom + depthY);
+            ctx.lineTo(chartRight, chartBottom);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            const groupWidth = (chartRight - chartLeft) / dailyStats.length;
+            const barWidth = 28;
+
+            dailyStats.forEach((item, index) => {
+                const groupX = chartLeft + index * groupWidth + groupWidth * 0.22;
+
+                // 1. Kur'an-ı Kerim 3D Sütunu (Mavi)
+                drawSingle3DBar(
+                    ctx,
+                    groupX,
+                    chartBottom,
+                    barWidth,
+                    (item.kScore / 100) * chartHeight,
+                    depthX,
+                    depthY,
+                    '#38bdf8', // Ön yüz
+                    '#7dd3fc', // Üst yüz
+                    '#0284c7', // Yan yüz
+                    item.hasKScore ? String(item.kScore) : '-'
+                );
+
+                // 2. Ezber 3D Sütunu (Yeşil)
+                drawSingle3DBar(
+                    ctx,
+                    groupX + barWidth + 12,
+                    chartBottom,
+                    barWidth,
+                    (item.eScore / 100) * chartHeight,
+                    depthX,
+                    depthY,
+                    '#4ade80', // Ön yüz
+                    '#86efac', // Üst yüz
+                    '#16a34a', // Yan yüz
+                    item.hasEScore ? String(item.eScore) : '-'
+                );
+
+                // Gün İsmi
+                ctx.fillStyle = '#0f172a';
+                ctx.textAlign = 'center';
+                ctx.font = "bold 16px 'Patrick Hand', cursive, sans-serif";
+                ctx.fillText(item.day, groupX + barWidth + 6, chartBottom + 26);
+            });
+        }
+
+        function drawSingle3DBar(ctx, x, bottomY, w, h, dx, dy, frontColor, topColor, sideColor, scoreText) {
+            const safeH = Math.max(h, 4);
+            const topY = bottomY - safeH;
+
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineJoin = 'round';
+
+            // Ön Yüz
+            ctx.fillStyle = frontColor;
+            ctx.beginPath();
+            ctx.rect(x, topY, w, safeH);
+            ctx.fill();
+            ctx.stroke();
+
+            // Üst 3D Yüzey
+            ctx.fillStyle = topColor;
+            ctx.beginPath();
+            ctx.moveTo(x, topY);
+            ctx.lineTo(x + dx, topY + dy);
+            ctx.lineTo(x + w + dx, topY + dy);
+            ctx.lineTo(x + w, topY);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Sağ Yan 3D Yüzey
+            ctx.fillStyle = sideColor;
+            ctx.beginPath();
+            ctx.moveTo(x + w, topY);
+            ctx.lineTo(x + w + dx, topY + dy);
+            ctx.lineTo(x + w + dx, bottomY + dy);
+            ctx.lineTo(x + w, bottomY);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Sütun Üstü Puan Yazısı
+            ctx.fillStyle = '#0f172a';
+            ctx.font = "bold 14px 'Patrick Hand', cursive, sans-serif";
+            ctx.textAlign = 'center';
+            ctx.fillText(scoreText, x + w / 2 + dx / 2, topY + dy - 5);
+        }
+
+        /**************************************************************
+         * 9. VELİYE WHATSAPP İLE GÜNLÜK ÖDEV VE CUMA ANALİZİ GÖNDERME (Madde 7)
+         **************************************************************/
+        function formatWhatsAppPhone(rawPhone) {
+            if (!rawPhone) return '';
+            let digits = rawPhone.replace(/\D/g, '');
+            if (digits.startsWith('00')) digits = digits.slice(2);
+            if (digits.startsWith('0') && digits.length === 11) {
+                digits = '90' + digits.slice(1);
+            } else if (digits.length === 10 && digits.startsWith('5')) {
+                digits = '90' + digits;
+            }
+            return digits;
+        }
+
+        function sendDailyHomeworkWhatsApp(studentId, month, week, day) {
+            const stu = appData.students.find(s => s.id === studentId);
+            if (!stu) return;
+
+            const rec = getDayRecord(stu, month, week, day);
+            const phone = formatWhatsAppPhone(stu.phone);
+
+            if (!phone) {
+                showToast('⚠️ Talebenin telefon numarası kayıtlı değil! Sol listeden ✏️ butonuna basıp veli numarasını ekleyin.', 'warn');
+                return;
+            }
+
+            const lines = [
+                `Selamün Aleyküm Değerli Velimiz,`,
+                `🕌 *${stu.name}* - *${month} Ayı ${week}. Hafta (${day})*`,
+                ``,
+                `📖 *Yarınki Kur'an Ödevi:* ${rec.kuranYarinPlace || '-'} ${rec.kuranYarinTekrar ? '(' + rec.kuranYarinTekrar + ' Tekrar)' : ''}`,
+                rec.kuranNote ? `📝 *Kur'an Hoca Notu:* ${rec.kuranNote}` : null,
+                ``,
+                `🧠 *Yarınki Ezber Ödevi:* ${rec.ezberYarinPlace || '-'} ${rec.ezberYarinTekrar ? '(' + rec.ezberYarinTekrar + ' Tekrar)' : ''}`,
+                rec.ezberNote ? `📝 *Ezber Hoca Notu:* ${rec.ezberNote}` : null,
+                ``,
+                `📌 *Not:* Tekrarları muhakkak bitirelim ve yüksek ve yavaş bir tonla çalışalım..`,
+                ``,
+                `Hayırlı akşamlar dileriz.`
+            ].filter(Boolean).join('\n');
+
+            const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(lines)}`;
+            window.open(waUrl, '_blank');
+        }
+
+        function sendWeeklyAnalysisWhatsApp(studentId, month, week) {
+            const stu = appData.students.find(s => s.id === studentId);
+            if (!stu) return;
+
+            const phone = formatWhatsAppPhone(stu.phone);
+            if (!phone) {
+                showToast('⚠️ Talebenin telefon numarası kayıtlı değil! Sol listeden ✏️ butonuna basıp veli numarasını ekleyin.', 'warn');
+                return;
+            }
+
+            const analysis = computeWeeklyAnalysis(stu, month, week);
+
+            const daySummaries = analysis.dailyStats.map(d => {
+                const kPart = `Kur'an: ${d.kuranPlace || '-'} (${d.hasKScore ? d.kScore + '/100' : '-'})`;
+                const ePart = `Ezber: ${d.ezberPlace || '-'} (${d.hasEScore ? d.eScore + '/100' : '-'})`;
+                const notes = [d.kuranNote, d.ezberNote].filter(Boolean).join(' | ');
+                return `• *${d.day}:* ${kPart} | ${ePart}${notes ? `\n   _Not: ${notes}_` : ''}`;
+            }).join('\n');
+
+            const cleanWarnings = [
+                ...analysis.repeatedWarnings.map(w => w.replace(/<[^>]+>/g, '')),
+                ...analysis.singleWarnings.map(w => w.replace(/<[^>]+>/g, ''))
+            ];
+
+            const messageLines = [
+                `Selamün Aleyküm Değerli Velimiz,`,
+                `📊 *${stu.name}* - *${month} Ayı ${week}. Hafta (Pazartesi - Cuma) Haftalık Analiz Raporu:*`,
+                ``,
+                `🏆 *HAFTALIK PUAN ORTALAMALARI:*`,
+                `• Kur'an-ı Kerim Ortalaması: *${analysis.kuranAvg}/100*`,
+                `• Ezber Dersi Ortalaması: *${analysis.ezberAvg}/100*`,
+                `• Haftalık Genel Başarı: *${analysis.generalAvg}/100*`,
+                ``,
+                `📅 *GÜN GÜN DERS ÖZETİ:*`,
+                daySummaries,
+                ``,
+                `🔍 *DETAYLI HOCA ANALİZİ VE DEĞERLENDİRME:*`,
+                analysis.performanceSummary,
+                ...(cleanWarnings.length > 0 ? cleanWarnings : ['✅ Bu hafta tekrarlayan bir harf veya mahreç eksiği görülmemiştir.']),
+                analysis.weekAbsences.length > 0
+                    ? `🗓️ *İzin / Devamsızlık:* ${analysis.weekAbsences.map(a => `${a.day} (${a.reason})`).join(', ')}`
+                    : null,
+                ``,
+                `Evde yapılan tekrarlar için teşekkür eder, hayırlı Cumalar dileriz.`
+            ].filter(Boolean).join('\n');
+
+            const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(messageLines)}`;
+            window.open(waUrl, '_blank');
+        }
+
+        /**************************************************************
+         * 10. PWA (MASAÜSTÜNE VE TELEFONA PROGRAM OLARAK EKLEME - Madde 10)
+         **************************************************************/
+        function setupPWAFeatures() {
+            const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" rx="24" fill="#fdfbf7" stroke="#1e293b" stroke-width="6"/><path d="M25 85 L95 45 M95 85 L25 45 M20 45 Q60 60 100 45 L100 32 Q60 47 20 32 Z" fill="#fef08a" stroke="#1e293b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="60" cy="22" r="6" fill="#1e293b"/></svg>`;
+            const iconUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgIcon);
+
+            const manifestObj = {
+                name: 'Medrese Ders Takip ve Analiz',
+                short_name: 'Medrese Takip',
+                description: 'Medrese Kur\'an-ı Kerim, Ezber ve Haftalık Analiz Sistemi',
+                start_url: window.location.href,
+                display: 'standalone',
+                background_color: '#fdfbf7',
+                theme_color: '#fdfbf7',
+                icons: [
+                    { src: iconUrl, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
+                    { src: iconUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+                ]
+            };
+
+            const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+            const manifestLink = document.createElement('link');
+            manifestLink.rel = 'manifest';
+            manifestLink.href = URL.createObjectURL(manifestBlob);
+            document.head.appendChild(manifestLink);
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPwaPrompt = e;
+                document.getElementById('pwa-install-btn-landing')?.classList.remove('hidden');
+                document.getElementById('pwa-install-btn-modal')?.classList.remove('hidden');
+            });
+        }
+
+        async function triggerPWAInstall() {
+            if (!deferredPwaPrompt) {
+                openInstallHelpModal();
+                return;
+            }
+            deferredPwaPrompt.prompt();
+            await deferredPwaPrompt.userChoice;
+            deferredPwaPrompt = null;
+        }
+
+        function openInstallHelpModal() {
+            openModal('modal-install-help');
+        }
+
+        /**************************************************************
+         * 11. YARDIMCI FONKSİYONLAR (MODAL & TOAST & GÜVENLİ METİN)
+         **************************************************************/
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove('hidden');
+            el.classList.add('flex');
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const colors = {
+                success: 'bg-emerald-200',
+                error: 'bg-rose-200',
+                warn: 'bg-amber-200',
+                info: 'bg-sky-200'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `sketch-box p-3 ${colors[type] || 'bg-white'} text-slate-900 text-sm sm:text-base font-bold pointer-events-auto animate-pop flex items-center justify-between gap-2`;
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.25s ease';
+                setTimeout(() => toast.remove(), 260);
+            }, 3400);
+        }
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+    </script>
+</body>
+</html>
